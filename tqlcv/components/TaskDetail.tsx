@@ -615,24 +615,24 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
 
                 <div className="mt-8">
                     <h3 className="font-semibold text-slate-800 mb-4">Tiến độ công việc ({completedSubtasks}/{totalSubtasks})</h3>
-                    <ul className="space-y-3">
+                    <ul className="space-y-2">
                         {editedTask.subtasks.map(subtask => (
-                            <li key={subtask.id} className="p-3 bg-slate-200/40 rounded-lg group">
+                            <li key={subtask.id} className="p-3 bg-slate-50/50 rounded-xl border border-slate-100 hover:bg-slate-100/50 hover:border-slate-200 transition-all duration-200 group">
                                 <div className="flex items-center">
                                     <input
                                         type="checkbox"
                                         id={`subtask-${subtask.id}`}
                                         checked={subtask.completed}
                                         onChange={() => handleSubtaskToggle(subtask.id)}
-                                        className="custom-checkbox h-4 w-4 text-indigo-600 flex-shrink-0 disabled:cursor-not-allowed"
+                                        className="custom-checkbox h-4 w-4 text-indigo-600 flex-shrink-0 disabled:cursor-not-allowed rounded"
                                         disabled={isReadOnly}
                                     />
                                     <div className="ml-3 flex-grow">
-                                        <label htmlFor={`subtask-${subtask.id}`} className={`text-md text-slate-800 select-none ${isReadOnly ? '' : 'cursor-pointer'} transition-colors ${subtask.completed ? 'line-through text-slate-500' : ''}`}>
+                                        <label htmlFor={`subtask-${subtask.id}`} className={`text-sm font-medium text-slate-800 select-none ${isReadOnly ? '' : 'cursor-pointer'} transition-colors ${subtask.completed ? 'line-through text-slate-500' : ''}`}>
                                             {subtask.title}
                                         </label>
                                         <div className="flex items-center gap-4 mt-1 text-xs">
-                                            <span className="text-slate-500 flex items-center gap-1">
+                                            <span className="text-slate-400 flex items-center gap-1">
                                                 <TaskDetailIcons.Calendar />
                                                 Tạo: {formatDateTime(subtask.createdAt || new Date().toISOString())}
                                             </span>
@@ -645,7 +645,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                                         </div>
                                     </div>
                                     {!isReadOnly && (
-                                        <button onClick={() => handleDeleteSubtask(subtask.id)} className="ml-2 p-1 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onClick={() => handleDeleteSubtask(subtask.id)} className="ml-2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200">
                                             <TaskDetailIcons.Trash />
                                         </button>
                                     )}
@@ -661,7 +661,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                                 {...subtaskInput}
                                 onFocus={() => handleInputFocus(subtaskInputRef)}
                                 placeholder="Thêm tiến độ mới..."
-                                className="w-full input-with-inline-button pl-3 py-2 border border-slate-300/70 rounded-lg bg-white/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 input-focus focus-ring no-zoom"
+                                className="compact-subtask-input input-with-inline-button w-full"
                                 style={{ fontSize: '16px', WebkitAppearance: 'none', WebkitTextSizeAdjust: '100%', transform: 'translateZ(0)' }}
                                 lang="vi"
                                 autoComplete="off"
@@ -681,22 +681,35 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
 
                 {/* Comments Section */}
                 <div className="mt-8">
-                    <h3 className="font-semibold text-slate-800 mb-4">Bình luận ({(editedTask.comments || []).length})</h3>
+                    <h3 className="font-semibold text-slate-800 mb-6">Bình luận ({(editedTask.comments || []).length})</h3>
 
                     {/* Existing Comments */}
-                    <div className="space-y-3 mb-4">
+                    <div className="mb-6">
                         {(editedTask.comments || []).map(comment => (
-                            <div key={comment.id} className="p-3 bg-blue-50/50 rounded-lg border-l-4 border-blue-200">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-medium text-slate-700">{comment.author.name}</span>
-                                        <span className="text-xs text-slate-500">
-                                            {formatDateTime(comment.createdAt)}
-                                            {comment.isEdited && <span className="ml-1">(đã chỉnh sửa)</span>}
-                                        </span>
+                            <div key={comment.id} className="modern-comment">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                        <div className="comment-author">{comment.author.name}</div>
+                                        <div className="comment-content">{comment.content}</div>
+                                        <div className="comment-meta">
+                                            <span className="comment-timestamp">
+                                                {formatDateTime(comment.createdAt)}
+                                                {comment.isEdited && <span className="ml-1">(đã chỉnh sửa)</span>}
+                                            </span>
+                                            <button
+                                                onClick={() => handleLikeComment(comment.id)}
+                                                className={`comment-action ${
+                                                    selectedUser && comment.likedBy.includes(selectedUser.id) ? 'liked' : ''
+                                                }`}
+                                                disabled={!selectedUser}
+                                            >
+                                                <TaskDetailIcons.Heart />
+                                                <span>{comment.likes}</span>
+                                            </button>
+                                        </div>
                                     </div>
                                     {!isReadOnly && selectedUser && comment.author.id === selectedUser.id && (
-                                        <div className="flex items-center gap-1">
+                                        <div className="flex items-center gap-1 ml-4">
                                             <button
                                                 onClick={() => handleEditComment(comment.id, comment.content)}
                                                 className="p-1 text-slate-400 hover:text-blue-600 rounded transition-colors"
@@ -715,49 +728,32 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                                     )}
                                 </div>
 
-                                {editingCommentId === comment.id ? (
-                                    <div className="space-y-2">
+                                {editingCommentId === comment.id && (
+                                    <div className="edit-comment-form">
                                         <textarea
                                             {...editCommentInput}
-                                            className="w-full px-3 py-2 border border-slate-300/70 rounded-lg bg-white/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                            className="edit-comment-textarea"
                                             rows={2}
                                             lang="vi"
                                             autoComplete="off"
                                             spellCheck="true"
+                                            placeholder="Chỉnh sửa bình luận..."
                                         />
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={handleSaveEditComment}
-                                                className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                                            >
-                                                Lưu
-                                            </button>
+                                        <div className="edit-comment-actions">
                                             <button
                                                 onClick={handleCancelEditComment}
-                                                className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                                                className="modern-button-secondary"
                                             >
                                                 Hủy
                                             </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <p className="text-slate-600 mb-2">{comment.content}</p>
-                                        <div className="flex items-center gap-3">
                                             <button
-                                                onClick={() => handleLikeComment(comment.id)}
-                                                className={`flex items-center gap-1 text-xs transition-colors ${
-                                                    selectedUser && comment.likedBy.includes(selectedUser.id)
-                                                        ? 'text-red-600 hover:text-red-700'
-                                                        : 'text-slate-400 hover:text-red-600'
-                                                }`}
-                                                disabled={!selectedUser}
+                                                onClick={handleSaveEditComment}
+                                                className="modern-button"
                                             >
-                                                <TaskDetailIcons.Heart />
-                                                <span>{comment.likes}</span>
+                                                Lưu
                                             </button>
                                         </div>
-                                    </>
+                                    </div>
                                 )}
                             </div>
                         ))}
@@ -770,9 +766,9 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                                 ref={commentInputRef}
                                 {...commentInput}
                                 onFocus={() => handleInputFocus(commentInputRef)}
-                                placeholder="Thêm bình luận..."
+                                placeholder="Viết bình luận..."
                                 rows={3}
-                                className="w-full textarea-with-inline-button pl-3 pt-3 border border-slate-300/70 rounded-lg bg-white/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none input-focus focus-ring no-zoom"
+                                className="modern-comment-input textarea-with-inline-button w-full"
                                 style={{ fontSize: '16px', minHeight: '80px', WebkitAppearance: 'none', WebkitTextSizeAdjust: '100%', transform: 'translateZ(0)' }}
                                 lang="vi"
                                 autoComplete="off"
