@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+tqlcv/node_modules/
+cloud-function/node_modules/
+
+# Build outputs
+tqlcv/dist/
+.next/
+out/
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Test files
+test-*.js
+debug-*.js
+
+# Documentation
+*.md
+!README.md
+
+# Google Apps Script (not needed for frontend)
+google-apps-script/
+
+# Cloud function (not needed for frontend)
+cloud-function/

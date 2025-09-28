@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd tqlcv && npm run build",
+  "outputDirectory": "tqlcv/dist",
+  "installCommand": "cd tqlcv && npm install",
+  "devCommand": "cd tqlcv && npm run dev",
+  "framework": "vite"
+}
