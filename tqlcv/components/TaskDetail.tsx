@@ -653,20 +653,26 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                         ))}
                     </ul>
                      {!isReadOnly && (
-                        <div className="mt-4 flex gap-2">
+                        <div className="mt-4 inline-input-container">
                             <input
                                 ref={subtaskInputRef}
                                 type="text"
                                 {...subtaskInput}
                                 onFocus={() => handleInputFocus(subtaskInputRef)}
                                 placeholder="Thêm tiến độ mới..."
-                                className="w-full px-3 py-2 border border-slate-300/70 rounded-lg bg-white/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 flex-grow"
+                                className="w-full input-with-inline-button pl-3 py-2 border border-slate-300/70 rounded-lg bg-white/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 input-focus focus-ring no-zoom"
+                                style={{ fontSize: '16px' }}
                                 lang="vi"
                                 autoComplete="off"
                                 spellCheck="true"
                             />
-                             <button onClick={handleAddSubtask} className="p-2 px-3 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors font-semibold flex items-center gap-1.5">
-                                <TaskDetailIcons.Plus /> <span className="hidden sm:inline">Thêm</span>
+                            <button
+                                onClick={handleAddSubtask}
+                                className="inline-input-button text-indigo-600 hover:text-white hover:bg-indigo-600 ios-button macos-hover no-zoom"
+                                title="Thêm tiến độ"
+                                disabled={!subtaskInput.value.trim()}
+                            >
+                                <TaskDetailIcons.Plus />
                             </button>
                         </div>
                     )}
@@ -758,20 +764,26 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
 
                     {/* Add New Comment */}
                     {!isReadOnly && (
-                        <div className="flex gap-2">
+                        <div className="relative">
                             <textarea
                                 ref={commentInputRef}
                                 {...commentInput}
                                 onFocus={() => handleInputFocus(commentInputRef)}
                                 placeholder="Thêm bình luận..."
-                                rows={2}
-                                className="w-full px-3 py-2 border border-slate-300/70 rounded-lg bg-white/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 flex-grow resize-none"
+                                rows={3}
+                                className="w-full textarea-with-inline-button pl-3 pt-3 border border-slate-300/70 rounded-lg bg-white/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none input-focus focus-ring no-zoom"
+                                style={{ fontSize: '16px', minHeight: '80px' }}
                                 lang="vi"
                                 autoComplete="off"
                                 spellCheck="true"
                             />
-                            <button onClick={handleAddComment} className="p-2 px-3 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors font-semibold flex items-center gap-1.5 self-end">
-                                <TaskDetailIcons.Send /> <span className="hidden sm:inline">Gửi</span>
+                            <button
+                                onClick={handleAddComment}
+                                className="inline-textarea-button text-blue-600 hover:text-white hover:bg-blue-600 ios-button macos-hover no-zoom"
+                                title="Gửi bình luận"
+                                disabled={!commentInput.value.trim()}
+                            >
+                                <TaskDetailIcons.Send />
                             </button>
                         </div>
                     )}

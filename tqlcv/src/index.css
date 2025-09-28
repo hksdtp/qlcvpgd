@@ -226,3 +226,103 @@ button:active {
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
+
+/* ===== INLINE BUTTON OPTIMIZATIONS ===== */
+
+/* Inline input buttons - Chat app style */
+.inline-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inline-input-button {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+
+.inline-input-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: translateY(-50%) scale(0.9);
+}
+
+.inline-input-button:not(:disabled):hover {
+  transform: translateY(-50%) scale(1.05);
+}
+
+.inline-input-button:not(:disabled):active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+/* Inline textarea buttons - Floating action button style */
+.inline-textarea-button {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 10;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.inline-textarea-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: scale(0.8);
+  box-shadow: none;
+}
+
+.inline-textarea-button:not(:disabled):hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.inline-textarea-button:not(:disabled):active {
+  transform: scale(0.95);
+}
+
+/* Input padding adjustments for inline buttons */
+.input-with-inline-button {
+  padding-right: 48px !important;
+}
+
+.textarea-with-inline-button {
+  padding-right: 48px !important;
+  padding-bottom: 48px !important;
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 768px) {
+  .inline-input-button,
+  .inline-textarea-button {
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  .input-with-inline-button {
+    padding-right: 52px !important;
+  }
+
+  .textarea-with-inline-button {
+    padding-right: 52px !important;
+    padding-bottom: 52px !important;
+  }
+}
