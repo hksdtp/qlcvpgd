@@ -53,9 +53,9 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, isSelected, onSelect }) => {
     const isUnread = !task.isRead;
     
     return (
-        <article 
-            onClick={() => onSelect(task)} 
-            className={`flex items-start gap-4 p-4 border-b border-slate-200/80 cursor-pointer hover-lift ${isSelected ? 'bg-indigo-100/60' : 'hover:bg-slate-100/50'} ${isUnread ? 'bg-white' : 'bg-gray-50/30'}`}
+        <article
+            onClick={() => onSelect(task)}
+            className={`flex items-start gap-4 p-4 border-b border-slate-200/80 cursor-pointer macos-hover ios-button no-zoom card-appear ${isSelected ? 'bg-indigo-100/60' : 'hover:bg-slate-100/50'} ${isUnread ? 'bg-white' : 'bg-gray-50/30'}`}
         >
             <div className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${statusConfig[task.status]?.dotClasses || 'bg-gray-500'}`}></div>
             <div className="flex-grow overflow-hidden">

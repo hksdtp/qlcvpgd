@@ -556,7 +556,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                         {!isReadOnly && hasChanges && (
                             <button
                                 onClick={handleSaveChanges}
-                                className="px-3 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium shadow-sm"
+                                className="px-3 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium shadow-sm ios-button macos-hover no-zoom"
                             >
                                 <TaskDetailIcons.Check />
                                 <span className="hidden sm:inline">Lưu</span>
@@ -565,7 +565,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                         {!isReadOnly && (
                             <button
                                 onClick={() => setIsEditingTask(!isEditingTask)}
-                                className={`p-2 rounded-lg transition-colors flex items-center text-sm font-medium shadow-sm ${
+                                className={`p-2 rounded-lg transition-colors flex items-center text-sm font-medium shadow-sm ios-button macos-hover no-zoom ${
                                     isEditingTask
                                         ? 'text-white bg-blue-600 hover:bg-blue-700'
                                         : 'text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200'
@@ -580,7 +580,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                                onClick={() => {
                                    if(window.confirm('Bạn có chắc muốn xóa công việc này?')) onDelete(task.id)
                                }}
-                               className="p-2 text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors flex items-center text-sm font-medium shadow-sm"
+                               className="p-2 text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors flex items-center text-sm font-medium shadow-sm ios-button macos-hover no-zoom"
                                title="Xóa"
                            >
                                <TaskDetailIcons.Trash />

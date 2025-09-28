@@ -57,7 +57,7 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                     </div>
 
                     {/* Modal Content with enhanced scrolling */}
-                    <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden elastic-scroll">
                         <div className="pb-8">
                             <TaskDetail
                                 task={task}
