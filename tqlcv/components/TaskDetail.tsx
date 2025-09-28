@@ -600,11 +600,12 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                       rows={4}
                       {...descriptionInput}
                       placeholder={isReadOnly ? "Không có mô tả" : "Thêm mô tả chi tiết..."}
-                      className={`text-slate-700 whitespace-pre-wrap leading-relaxed p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 ${
+                      className={`text-slate-700 whitespace-pre-wrap leading-relaxed p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 no-zoom ${
                           (isReadOnly || !isEditingTask)
                               ? 'bg-slate-50 border border-slate-200 cursor-default opacity-75'
                               : 'bg-white border-2 border-slate-200 hover:border-slate-300 focus:border-indigo-500'
                       }`}
+                      style={{ fontSize: '16px', WebkitAppearance: 'none', WebkitTextSizeAdjust: '100%', transform: 'translateZ(0)' }}
                       readOnly={isReadOnly || !isEditingTask}
                       lang="vi"
                       autoComplete="off"
@@ -661,7 +662,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                                 onFocus={() => handleInputFocus(subtaskInputRef)}
                                 placeholder="Thêm tiến độ mới..."
                                 className="w-full input-with-inline-button pl-3 py-2 border border-slate-300/70 rounded-lg bg-white/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 input-focus focus-ring no-zoom"
-                                style={{ fontSize: '16px' }}
+                                style={{ fontSize: '16px', WebkitAppearance: 'none', WebkitTextSizeAdjust: '100%', transform: 'translateZ(0)' }}
                                 lang="vi"
                                 autoComplete="off"
                                 spellCheck="true"
@@ -772,7 +773,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                                 placeholder="Thêm bình luận..."
                                 rows={3}
                                 className="w-full textarea-with-inline-button pl-3 pt-3 border border-slate-300/70 rounded-lg bg-white/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none input-focus focus-ring no-zoom"
-                                style={{ fontSize: '16px', minHeight: '80px' }}
+                                style={{ fontSize: '16px', minHeight: '80px', WebkitAppearance: 'none', WebkitTextSizeAdjust: '100%', transform: 'translateZ(0)' }}
                                 lang="vi"
                                 autoComplete="off"
                                 spellCheck="true"

@@ -79,7 +79,8 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onAddTask 
               type="text"
               id="title"
               {...titleInput}
-              className="w-full px-3 py-2 border border-slate-300/70 rounded-lg bg-white/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-3 py-2 border border-slate-300/70 rounded-lg bg-white/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 no-zoom"
+              style={{ fontSize: '16px', WebkitAppearance: 'none', WebkitTextSizeAdjust: '100%', transform: 'translateZ(0)' }}
               placeholder="Ví dụ: Thiết kế trang chủ"
               lang="vi"
               autoComplete="off"
@@ -93,7 +94,8 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onAddTask 
               id="description"
               rows={3}
               {...descriptionInput}
-              className="w-full px-3 py-2 border border-slate-300/70 rounded-lg bg-white/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-3 py-2 border border-slate-300/70 rounded-lg bg-white/50 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 no-zoom"
+              style={{ fontSize: '16px', WebkitAppearance: 'none', WebkitTextSizeAdjust: '100%', transform: 'translateZ(0)' }}
               placeholder="Thêm mô tả chi tiết cho công việc..."
               lang="vi"
               autoComplete="off"

@@ -326,3 +326,70 @@ button:active {
     padding-bottom: 52px !important;
   }
 }
+
+/* ===== STRONGEST MOBILE ZOOM PREVENTION ===== */
+
+/* Force 16px font-size on ALL inputs to prevent zoom */
+input, textarea, select {
+  font-size: 16px !important;
+  -webkit-text-size-adjust: 100% !important;
+  -webkit-appearance: none !important;
+  transform: translateZ(0) !important;
+  touch-action: manipulation !important;
+}
+
+/* Specific iOS Safari zoom prevention */
+@supports (-webkit-touch-callout: none) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: 16px !important;
+    -webkit-appearance: none !important;
+    -webkit-border-radius: 0 !important;
+    border-radius: 0 !important;
+    -webkit-text-size-adjust: 100% !important;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    transform: translateZ(0) !important;
+  }
+}
+
+/* WebKit specific zoom prevention */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: 16px !important;
+    -webkit-appearance: none !important;
+    -webkit-border-radius: 0 !important;
+    border-radius: 0 !important;
+  }
+}
+
+/* Mobile specific zoom prevention */
+@media (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px !important;
+    -webkit-text-size-adjust: none !important;
+    -webkit-appearance: none !important;
+    transform: translateZ(0) !important;
+  }
+}
+
+/* Focus state without zoom */
+input:focus, textarea:focus, select:focus {
+  font-size: 16px !important;
+  -webkit-text-size-adjust: 100% !important;
+  transform: translateZ(0) !important;
+  outline: none !important;
+}
