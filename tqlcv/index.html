@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Trình quản lý công việc</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/"
+  }
+}
+</script>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    background-color: #f8fafc; /* slate-50 */
+    background-image: linear-gradient(to bottom right, #f8fafc, #f1f5f9); /* slate-50 to slate-100 */
+  }
+
+  /* Ensure Vietnamese characters render properly */
+  input, textarea, [contenteditable] {
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    /* Vietnamese IME support */
+    ime-mode: auto;
+    -webkit-ime-mode: auto;
+    -moz-ime-mode: auto;
+    -ms-ime-mode: auto;
+
+    /* Composition support */
+    -webkit-composition-fill-color: rgba(59, 130, 246, 0.1);
+    -webkit-composition-frame-color: rgba(59, 130, 246, 0.3);
+  }
+  .custom-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1; /* slate-300 */
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+  .custom-checkbox:checked {
+    background-color: #4f46e5; /* indigo-600 */
+    border-color: #4f46e5; /* indigo-600 */
+  }
+  .custom-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: translate(-50%, -60%) rotate(45deg);
+  }
+  @keyframes app-fade-in {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .animate-app-fade-in {
+    animation: app-fade-in 0.4s ease-out forwards;
+  }
+</style>
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
