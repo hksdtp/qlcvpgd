@@ -1,5 +1,5 @@
 import React from 'react';
-import { Task, TaskStatus, DEPARTMENT_COLORS, STATUS_COLORS } from '../types';
+import { Task, TaskStatus, DEPARTMENT_COLORS, STATUS_COLORS, PRIORITY_COLORS } from '../types';
 
 // Status colors imported from types.ts for consistency
 
@@ -49,8 +49,13 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, isSelected, onSelect }) => {
         >
             <div className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${statusConfig[task.status]?.dotClasses || 'bg-gray-500'}`}></div>
             <div className="flex-grow overflow-hidden">
-                {/* Department and Status badges - Top priority */}
-                <div className="flex items-center gap-2 mb-2">
+                {/* Department, Status, and Priority badges */}
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    {task.priority && (
+                        <span className={`px-2 py-0.5 rounded-full border font-bold text-xs priority-badge ${PRIORITY_COLORS[task.priority] || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
+                            {task.priority}
+                        </span>
+                    )}
                     {task.department && (
                         <span className={`px-2 py-0.5 rounded-full border font-medium text-xs ${DEPARTMENT_COLORS[task.department] || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
                             {task.department}

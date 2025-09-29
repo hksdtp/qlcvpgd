@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Task, TaskStatus, Subtask, SelectOption, User, Comment, DEPARTMENTS, DEPARTMENT_COLORS, STATUS_COLORS } from '../types';
+import { Task, TaskStatus, TaskPriority, Subtask, SelectOption, User, Comment, DEPARTMENTS, DEPARTMENT_COLORS, STATUS_COLORS, PRIORITY_COLORS } from '../types';
 
 // Professional SVG Icons for TaskDetail
 const TaskDetailIcons = {
@@ -107,12 +107,19 @@ const departmentOptions: SelectOption[] = DEPARTMENTS.map(dept => ({
     label: dept
 }));
 
+const priorityOptions: SelectOption[] = [
+    { value: TaskPriority.High, label: TaskPriority.High },
+    { value: TaskPriority.Medium, label: TaskPriority.Medium },
+    { value: TaskPriority.Low, label: TaskPriority.Low },
+];
+
 const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDelete, isReadOnly, selectedUser, isMobileModal }) => {
     const [editedTask, setEditedTask] = useState<Task>(task);
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
     const [newComment, setNewComment] = useState('');
     const [showStatusDropdown, setShowStatusDropdown] = useState(false);
     const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
+    const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
     const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
     const [editingCommentContent, setEditingCommentContent] = useState('');
     const [isEditingTask, setIsEditingTask] = useState(false);
@@ -164,9 +171,10 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as HTMLElement;
-            if (!target.closest('.status-dropdown') && !target.closest('.department-dropdown')) {
+            if (!target.closest('.status-dropdown') && !target.closest('.department-dropdown') && !target.closest('.priority-dropdown')) {
                 setShowStatusDropdown(false);
                 setShowDepartmentDropdown(false);
+                setShowPriorityDropdown(false);
             }
         };
 
@@ -240,7 +248,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
         debouncedUpdate(updatedTask);
     };
 
-    const handleSelectChange = (field: 'status' | 'department', value: string) => {
+    const handleSelectChange = (field: 'status' | 'department' | 'priority', value: string) => {
         setEditedTask(prev => ({...prev, [field]: value}));
     };
 
@@ -459,7 +467,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
             <div className="flex-grow overflow-y-auto overflow-x-hidden">
                 {/* Department - Status - Actions in One Line */}
                 <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
-                    {/* Left side: Department and Status */}
+                    {/* Left side: Department, Status, and Priority */}
                     <div className="flex items-center gap-3 flex-wrap">
                         {/* Department */}
                         <div className="department-dropdown relative">
@@ -497,6 +505,43 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                                             }`}>
                                                 {option.label}
                                             </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Priority */}
+                        <div className="priority-dropdown relative">
+                            <button
+                                onClick={() => canEditTask && isEditingTask && setShowPriorityDropdown(!showPriorityDropdown)}
+                                disabled={!canEditTask || !isEditingTask}
+                                className={`px-3 py-2 rounded-lg border font-bold text-sm transition-all duration-200 priority-badge ${
+                                    editedTask.priority ? PRIORITY_COLORS[editedTask.priority] : 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'
+                                } ${(canEditTask && isEditingTask) ? 'cursor-pointer hover:scale-105 hover:shadow-sm' : 'cursor-default'}`}
+                            >
+                                {editedTask.priority || 'TRUNG BÌNH'}
+                                {(canEditTask && isEditingTask) && (
+                                    <svg className="w-4 h-4 ml-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                )}
+                            </button>
+
+                            {showPriorityDropdown && (canEditTask && isEditingTask) && (
+                                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[120px]">
+                                    {priorityOptions.map((option) => (
+                                        <button
+                                            key={option.value}
+                                            onClick={() => {
+                                                handleSelectChange('priority', option.value);
+                                                setShowPriorityDropdown(false);
+                                            }}
+                                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg font-bold priority-badge ${
+                                                PRIORITY_COLORS[option.value] || 'bg-gray-100 text-gray-800'
+                                            }`}
+                                        >
+                                            {option.label}
                                         </button>
                                     ))}
                                 </div>

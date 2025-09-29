@@ -9,6 +9,13 @@ export enum TaskStatus {
   Stopped = 'Dừng',
 }
 
+// Task Priority levels
+export enum TaskPriority {
+  High = 'CAO',
+  Medium = 'TRUNG BÌNH',
+  Low = 'THẤP',
+}
+
 // Department options for Vietnamese companies
 export const DEPARTMENTS = [
   'Kinh Doanh',
@@ -42,6 +49,13 @@ export const STATUS_COLORS: { [key: string]: string } = {
     'Dừng': 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200'
 };
 
+// Task Priority Colors - Distinctive and Modern
+export const PRIORITY_COLORS: { [key: string]: string } = {
+    'CAO': 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200',
+    'TRUNG BÌNH': 'bg-yellow-100 text-yellow-700 border-yellow-200 hover:bg-yellow-200',
+    'THẤP': 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
+};
+
 export interface Subtask {
   id: string;
   title: string;
@@ -66,6 +80,7 @@ export interface Task {
   title: string;
   description?: string;
   status: TaskStatus;
+  priority?: TaskPriority; // Task priority level
   subtasks: Subtask[];
   comments: Comment[];
   createdAt: string; // ISO string

@@ -1,6 +1,6 @@
 // FIX: Implement the AddTaskModal component to allow users to create new tasks.
 import React, { useState } from 'react';
-import { Task, TaskStatus, SelectOption, DEPARTMENTS } from '../types';
+import { Task, TaskStatus, TaskPriority, SelectOption, DEPARTMENTS } from '../types';
 import { CloseIcon } from './icons';
 import CustomSelect from './CustomSelect';
 import { useVietnameseInput } from '../hooks/useVietnameseInput';
@@ -26,11 +26,18 @@ const departmentOptions: SelectOption[] = DEPARTMENTS.map(dept => ({
   label: dept
 }));
 
+const priorityOptions: SelectOption[] = [
+  { value: TaskPriority.High, label: TaskPriority.High },
+  { value: TaskPriority.Medium, label: TaskPriority.Medium },
+  { value: TaskPriority.Low, label: TaskPriority.Low },
+];
+
 
 const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onAddTask }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<TaskStatus>(TaskStatus.NotStarted);
+  const [priority, setPriority] = useState<TaskPriority>(TaskPriority.Medium);
   const [department, setDepartment] = useState('CV Chung');
 
   // Vietnamese input support
@@ -51,12 +58,14 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onAddTask 
       title,
       description,
       status,
+      priority,
       department,
       comments: [] // Initialize empty comments array with proper structure
     });
     setTitle('');
     setDescription('');
     setStatus(TaskStatus.NotStarted);
+    setPriority(TaskPriority.Medium);
     setDepartment('CV Chung');
     onClose();
   };
@@ -102,13 +111,21 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onAddTask 
               spellCheck="true"
             />
           </div>
-           <div className="grid grid-cols-2 gap-4 mb-8">
+           <div className="grid grid-cols-3 gap-4 mb-8">
              <div>
                 <label htmlFor="status" className="block text-sm font-semibold text-slate-700 mb-2">Trạng thái</label>
                 <CustomSelect
                     options={statusOptions}
                     value={status}
                     onChange={(newValue) => setStatus(newValue as TaskStatus)}
+                />
+             </div>
+             <div>
+                <label htmlFor="priority" className="block text-sm font-semibold text-slate-700 mb-2">Ưu tiên</label>
+                <CustomSelect
+                    options={priorityOptions}
+                    value={priority}
+                    onChange={(newValue) => setPriority(newValue as TaskPriority)}
                 />
              </div>
              <div>
