@@ -515,6 +515,67 @@ button:active {
     justify-content: flex-end;
 }
 
+/* ===== MODERN BADGE SYSTEM - macOS/iOS STYLE ===== */
+
+/* Enhanced badge styling with subtle shadows and smooth transitions */
+.modern-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.modern-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Status badge specific styling */
+.status-badge {
+    font-weight: 500;
+    letter-spacing: 0.025em;
+}
+
+/* Department badge specific styling */
+.department-badge {
+    font-weight: 600;
+    letter-spacing: 0.025em;
+}
+
+/* Priority badge styling (for future use) */
+.priority-badge {
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-size: 10px;
+}
+
+.priority-badge.high {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    color: #dc2626;
+    border-color: #fecaca;
+    box-shadow: 0 1px 3px rgba(220, 38, 38, 0.1);
+}
+
+.priority-badge.medium {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    color: #d97706;
+    border-color: #fed7aa;
+    box-shadow: 0 1px 3px rgba(217, 119, 6, 0.1);
+}
+
+.priority-badge.low {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    color: #16a34a;
+    border-color: #bbf7d0;
+    box-shadow: 0 1px 3px rgba(22, 163, 74, 0.1);
+}
+
 /* ===== STRONGEST MOBILE ZOOM PREVENTION ===== */
 
 /* Force 16px font-size on ALL inputs to prevent zoom */

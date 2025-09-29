@@ -93,8 +93,9 @@ function rowToTask(row: string[]): Task | null {
 
 // Google Sheets Service Class
 export class GoogleSheetsService {
-  private cache: { data: Task[] | null; timestamp: number } = { data: null, timestamp: 0 };
+  private cache: { data: Task[] | null; timestamp: number; userId?: string } = { data: null, timestamp: 0 };
   private readonly CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
+  private currentUserId: string = 'u4'; // Default to NI user
 
   constructor() {
     if (!GOOGLE_SHEETS_CONFIG.apiKey || !GOOGLE_SHEETS_CONFIG.spreadsheetId) {
@@ -105,15 +106,26 @@ export class GoogleSheetsService {
     }
   }
 
+  // Set current user for user-specific data storage
+  setCurrentUser(userId: string): void {
+    if (this.currentUserId !== userId) {
+      console.log(`👤 Switching user from ${this.currentUserId} to ${userId}`);
+      this.currentUserId = userId;
+      // Clear cache when user changes
+      this.clearCache();
+    }
+  }
+
   private isCacheValid(): boolean {
     return this.cache.data !== null &&
+           this.cache.userId === this.currentUserId &&
            (Date.now() - this.cache.timestamp) < this.CACHE_DURATION;
   }
 
   // Force clear cache and refresh data
   async clearCacheAndRefresh(): Promise<Task[]> {
     console.log('🔄 Clearing cache and forcing refresh...');
-    this.cache = { data: null, timestamp: 0 };
+    this.cache = { data: null, timestamp: 0, userId: undefined };
     localStorage.removeItem('tasks_cache');
     return this.getTasks();
   }
@@ -198,6 +210,7 @@ export class GoogleSheetsService {
       this.cache = {
         data: tasks,
         timestamp: Date.now(),
+        userId: this.currentUserId,
       };
 
       console.log(`✅ Loaded ${tasks.length} tasks from Google Sheets`);
@@ -233,6 +246,7 @@ export class GoogleSheetsService {
       this.cache = {
         data: tasks,
         timestamp: Date.now(),
+        userId: this.currentUserId,
       };
 
       console.log(`✅ Saved ${tasks.length} tasks (localStorage fallback)`);
@@ -448,7 +462,7 @@ export class GoogleSheetsService {
 
   // Clear cache
   clearCache(): void {
-    this.cache = { data: null, timestamp: 0 };
+    this.cache = { data: null, timestamp: 0, userId: undefined };
     console.log('🗑️ Google Sheets cache cleared');
   }
 
@@ -463,10 +477,12 @@ export class GoogleSheetsService {
     }
   }
 
-  // LocalStorage fallback methods
+  // LocalStorage fallback methods - User-specific storage
   private getLocalStorageFallback(): Task[] {
     try {
-      const stored = localStorage.getItem('tasks_u4'); // NI user
+      const storageKey = `tasks_${this.currentUserId}`;
+      const stored = localStorage.getItem(storageKey);
+      console.log(`📱 Loading localStorage for user ${this.currentUserId} from key: ${storageKey}`);
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -475,10 +491,13 @@ export class GoogleSheetsService {
 
   private saveToLocalStorage(tasks: Task[]): void {
     try {
-      localStorage.setItem('tasks_u4', JSON.stringify(tasks)); // NI user
+      const storageKey = `tasks_${this.currentUserId}`;
+      console.log(`💾 Saving localStorage for user ${this.currentUserId} to key: ${storageKey}`);
+      localStorage.setItem(storageKey, JSON.stringify(tasks));
       localStorage.setItem('tasks_backup', JSON.stringify({
         tasks,
         timestamp: new Date().toISOString(),
+        userId: this.currentUserId,
       }));
     } catch (error) {
       console.error('Failed to save to localStorage:', error);

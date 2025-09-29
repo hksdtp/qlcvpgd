@@ -19,6 +19,7 @@ interface UseGoogleSheetsActions {
   clearError: () => void;
   exportTasks: () => Promise<{ tasks: Task[]; timestamp: string }>;
   importTasks: (tasks: Task[]) => Promise<void>;
+  setCurrentUser: (userId: string) => void;
 }
 
 export function useGoogleSheets() {
@@ -225,6 +226,13 @@ export function useGoogleSheets() {
     setState(prev => ({ ...prev, error: null }));
   }, []);
 
+  // Set current user for user-specific data storage
+  const setCurrentUser = useCallback((userId: string) => {
+    googleSheetsService.setCurrentUser(userId);
+    // Refresh tasks for the new user
+    loadTasks(false); // Don't show loading spinner for user switch
+  }, [loadTasks]);
+
   // Export tasks
   const exportTasks = useCallback(async () => {
     return await googleSheetsService.exportTasks();
@@ -302,6 +310,7 @@ export function useGoogleSheets() {
     clearError,
     exportTasks,
     importTasks,
+    setCurrentUser,
   };
 
   return {

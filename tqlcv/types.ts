@@ -31,6 +31,17 @@ export const DEPARTMENT_COLORS: { [key: string]: string } = {
     'CV Khác': 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200'
 };
 
+// Task Status Colors - macOS/iOS Style with Enhanced Design
+export const STATUS_COLORS: { [key: string]: string } = {
+    'Chưa làm': 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200',
+    'Lên Kế Hoạch': 'bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200',
+    'Cần làm': 'bg-yellow-100 text-yellow-700 border-yellow-200 hover:bg-yellow-200',
+    'Đang làm': 'bg-indigo-100 text-indigo-700 border-indigo-200 hover:bg-indigo-200',
+    'Hoàn thành': 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200',
+    'Tồn đọng': 'bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-200',
+    'Dừng': 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200'
+};
+
 export interface Subtask {
   id: string;
   title: string;
@@ -58,6 +69,7 @@ export interface Task {
   subtasks: Subtask[];
   comments: Comment[];
   createdAt: string; // ISO string
+  createdBy?: string; // User ID of task creator for permission system
   department?: string;
   isRead?: boolean; // Gmail-style read/unread state
 }

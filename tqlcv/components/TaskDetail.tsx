@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Task, TaskStatus, Subtask, SelectOption, User, Comment, DEPARTMENTS, DEPARTMENT_COLORS } from '../types';
+import { Task, TaskStatus, Subtask, SelectOption, User, Comment, DEPARTMENTS, DEPARTMENT_COLORS, STATUS_COLORS } from '../types';
 
 // Professional SVG Icons for TaskDetail
 const TaskDetailIcons = {
@@ -60,17 +60,7 @@ const TaskDetailIcons = {
     )
 };
 
-// Status colors for badges
-
-const STATUS_COLORS: { [key: string]: string } = {
-    'Chưa làm': 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200',
-    'Đang làm': 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200',
-    'Lên Kế Hoạch': 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200',
-    'Đang Review': 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200',
-    'Hoàn thành': 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200',
-    'Tạm dừng': 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200',
-    'Hủy bỏ': 'bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200'
-};
+// Status colors imported from types.ts for consistency
 import { ChevronLeftIcon, TrashIcon, CheckIcon, PlusIcon } from './icons';
 import { useVietnameseInput } from '../hooks/useVietnameseInput';
 import { useDebounce } from '../hooks/useDebounce';
@@ -126,6 +116,11 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
     const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
     const [editingCommentContent, setEditingCommentContent] = useState('');
     const [isEditingTask, setIsEditingTask] = useState(false);
+
+    // Permission system: Check if current user is task owner
+    const isTaskOwner = selectedUser && task.createdBy === selectedUser.id;
+    const canEditTask = !isReadOnly && isTaskOwner;
+    const canDeleteTask = !isReadOnly && isTaskOwner;
 
     // Refs for mobile keyboard handling
     const subtaskInputRef = useRef<HTMLInputElement>(null);
@@ -270,7 +265,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
     };
     
     const handleAddSubtask = () => {
-        if (!newSubtaskTitle.trim() || isReadOnly) return;
+        if (!newSubtaskTitle.trim() || !canEditTask) return;
         const now = new Date().toISOString();
         const newSubtask: Subtask = {
             id: `s-${Date.now()}`,
@@ -287,7 +282,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
     };
 
     const handleDeleteSubtask = (subtaskId: string) => {
-        if (isReadOnly) return;
+        if (!canEditTask) return;
         const updatedSubtasks = editedTask.subtasks.filter(subtask => subtask.id !== subtaskId);
         const updatedTask = { ...editedTask, subtasks: updatedSubtasks };
         setEditedTask(updatedTask);
@@ -420,7 +415,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
     };
 
     const handleSaveChanges = () => {
-        if (isReadOnly) return;
+        if (!canEditTask) return;
         onUpdate(editedTask);
     };
     
@@ -438,19 +433,19 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                             type="text"
                             {...titleInput}
                             className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 bg-transparent focus:outline-none focus:bg-slate-200/50 rounded-lg p-1 -m-1 w-full truncate disabled:bg-transparent disabled:cursor-default"
-                            readOnly={isReadOnly}
+                            readOnly={!canEditTask}
                             lang="vi"
                             autoComplete="off"
                             spellCheck="true"
                         />
                     </div>
                     <div className="flex items-center gap-1 md:gap-2 flex-shrink-0 pl-2">
-                        {!isReadOnly && hasChanges && (
+                        {canEditTask && hasChanges && (
                             <button onClick={handleSaveChanges} className="p-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-full transition-colors flex items-center gap-2 pl-3 pr-4 text-sm font-semibold shadow-lg shadow-indigo-500/30">
                                 <TaskDetailIcons.Check /> <span>Lưu</span>
                             </button>
                         )}
-                        {!isReadOnly && (
+                        {canDeleteTask && (
                            <button onClick={() => { if(window.confirm('Bạn có chắc muốn xóa công việc này?')) onDelete(task.id) }} className="p-2 text-slate-500 hover:text-red-600 rounded-full hover:bg-red-500/10 transition-colors">
                                <TaskDetailIcons.Trash />
                            </button>
@@ -553,7 +548,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
 
                     {/* Right side: Action Buttons */}
                     <div className="flex items-center gap-2">
-                        {!isReadOnly && hasChanges && (
+                        {canEditTask && hasChanges && (
                             <button
                                 onClick={handleSaveChanges}
                                 className="px-3 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium shadow-sm ios-button macos-hover no-zoom"
@@ -625,7 +620,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                                         checked={subtask.completed}
                                         onChange={() => handleSubtaskToggle(subtask.id)}
                                         className="custom-checkbox h-4 w-4 text-indigo-600 flex-shrink-0 disabled:cursor-not-allowed rounded"
-                                        disabled={isReadOnly}
+                                        disabled={!canEditTask}
                                     />
                                     <div className="ml-3 flex-grow">
                                         <label htmlFor={`subtask-${subtask.id}`} className={`text-sm font-medium text-slate-800 select-none ${isReadOnly ? '' : 'cursor-pointer'} transition-colors ${subtask.completed ? 'line-through text-slate-500' : ''}`}>
@@ -644,7 +639,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                                             )}
                                         </div>
                                     </div>
-                                    {!isReadOnly && (
+                                    {canEditTask && (
                                         <button onClick={() => handleDeleteSubtask(subtask.id)} className="ml-2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200">
                                             <TaskDetailIcons.Trash />
                                         </button>
@@ -653,7 +648,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                             </li>
                         ))}
                     </ul>
-                     {!isReadOnly && (
+                     {canEditTask && (
                         <div className="mt-4 inline-input-container">
                             <input
                                 ref={subtaskInputRef}
@@ -759,8 +754,8 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                         ))}
                     </div>
 
-                    {/* Add New Comment */}
-                    {!isReadOnly && (
+                    {/* Add New Comment - All users can comment */}
+                    {!isReadOnly && selectedUser && (
                         <div className="relative">
                             <textarea
                                 ref={commentInputRef}

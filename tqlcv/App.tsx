@@ -121,7 +121,11 @@ const App: React.FC = () => {
 
         if (savedUser) {
             try {
-                setCurrentUser(JSON.parse(savedUser));
+                const user = JSON.parse(savedUser);
+                setCurrentUser(user);
+                // CRITICAL FIX: Set current user in Google Sheets service when loading from localStorage
+                actions.setCurrentUser(user.id);
+                console.log(`🔄 Restored user from localStorage: ${user.name} (${user.id})`);
             } catch (error) {
                 console.error('Error loading user:', error);
             }
@@ -134,7 +138,7 @@ const App: React.FC = () => {
                 console.error('Error loading selected user:', error);
             }
         }
-    }, []);
+    }, [actions]);
 
     // Handle user selection from UserSelection component
     const handleUserSelect = (user: SelectedUser) => {
@@ -146,6 +150,10 @@ const App: React.FC = () => {
         if (mappedUser) {
             setCurrentUser(mappedUser);
             localStorage.setItem('currentUser', JSON.stringify(mappedUser));
+
+            // CRITICAL FIX: Set current user in Google Sheets service for user-specific data
+            actions.setCurrentUser(mappedUser.id);
+            console.log(`🔄 User switched to: ${mappedUser.name} (${mappedUser.id})`);
         }
     };
 
@@ -169,6 +177,7 @@ const App: React.FC = () => {
                 ...taskData,
                 subtasks: [],
                 comments: taskData.comments || [],
+                createdBy: currentUser?.id, // Set task creator for permission system
             });
             console.log('✅ Task added successfully');
         } catch (error) {

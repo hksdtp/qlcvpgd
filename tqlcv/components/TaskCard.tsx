@@ -1,17 +1,7 @@
 import React from 'react';
-import { Task, TaskStatus, DEPARTMENT_COLORS } from '../types';
+import { Task, TaskStatus, DEPARTMENT_COLORS, STATUS_COLORS } from '../types';
 
-// Status colors
-
-const STATUS_COLORS: { [key: string]: string } = {
-    'Chưa làm': 'bg-gray-100 text-gray-800 border-gray-200',
-    'Đang làm': 'bg-blue-100 text-blue-800 border-blue-200',
-    'Lên Kế Hoạch': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    'Đang Review': 'bg-orange-100 text-orange-800 border-orange-200',
-    'Hoàn thành': 'bg-green-100 text-green-800 border-green-200',
-    'Tạm dừng': 'bg-red-100 text-red-800 border-red-200',
-    'Hủy bỏ': 'bg-slate-100 text-slate-800 border-slate-200'
-};
+// Status colors imported from types.ts for consistency
 
 interface TaskCardProps {
   task: Task;
