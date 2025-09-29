@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { DEPARTMENTS, DEPARTMENT_COLORS, STATUS_COLORS } from '../types';
+import { Task, TaskStatus, TaskPriority, DEPARTMENTS, DEPARTMENT_COLORS, STATUS_COLORS, PRIORITY_COLORS } from '../types';
 
 // Status configurations
 
@@ -84,20 +84,26 @@ const STATUS_ICONS: { [key: string]: JSX.Element } = {
 interface FilterMenuProps {
     selectedDepartment: string;
     selectedStatus: string;
+    selectedPriority: string;
     onDepartmentChange: (department: string) => void;
     onStatusChange: (status: string) => void;
+    onPriorityChange: (priority: string) => void;
     departmentCounts: { [key: string]: number };
     statusCounts: { [key: string]: number };
+    priorityCounts: { [key: string]: number };
     totalTasks: number;
 }
 
 const FilterMenu: React.FC<FilterMenuProps> = ({
     selectedDepartment,
     selectedStatus,
+    selectedPriority,
     onDepartmentChange,
     onStatusChange,
+    onPriorityChange,
     departmentCounts,
     statusCounts,
+    priorityCounts,
     totalTasks
 }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -115,7 +121,7 @@ const FilterMenu: React.FC<FilterMenuProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const hasActiveFilters = selectedDepartment || selectedStatus;
+    const hasActiveFilters = selectedDepartment || selectedStatus || selectedPriority;
 
     return (
         <div className="relative" ref={menuRef}>
@@ -258,6 +264,50 @@ const FilterMenu: React.FC<FilterMenuProps> = ({
                                 })}
                             </div>
 
+                            {/* Priority Filters */}
+                            <div className="mt-4 border-t border-slate-200 pt-2">
+                                <div className="px-4 py-2">
+                                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">ƯU TIÊN</span>
+                                </div>
+                                {Object.keys(priorityCounts).map(priority => {
+                                    const count = priorityCounts[priority] || 0;
+                                    if (count === 0) return null;
+                                    const isActive = selectedPriority === priority;
+                                    return (
+                                        <button
+                                            key={priority}
+                                            onClick={() => {
+                                                onPriorityChange(priority);
+                                                onDepartmentChange('');
+                                                onStatusChange('');
+                                                setIsOpen(false);
+                                            }}
+                                            className={`w-full flex items-center gap-4 px-4 py-3 text-left hover:bg-slate-50 transition-colors ${
+                                                isActive ? 'bg-green-50 text-green-700 border-r-4 border-green-500' : 'text-slate-700'
+                                            }`}
+                                        >
+                                            <div className={`w-3 h-3 rounded-full border-2 ${
+                                                priority === 'CAO' ? 'bg-red-500 border-red-500' :
+                                                priority === 'TRUNG BÌNH' ? 'bg-yellow-500 border-yellow-500' :
+                                                'bg-green-500 border-green-500'
+                                            }`} />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between">
+                                                    <span className={`font-bold text-sm priority-badge ${
+                                                        PRIORITY_COLORS[priority] || 'text-slate-700'
+                                                    }`}>
+                                                        {priority}
+                                                    </span>
+                                                    <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                                                        {count}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
                             {/* Clear All Button */}
                             {hasActiveFilters && (
                                 <div className="mt-4 border-t border-slate-200 pt-4 px-4">
@@ -265,6 +315,7 @@ const FilterMenu: React.FC<FilterMenuProps> = ({
                                         onClick={() => {
                                             onDepartmentChange('');
                                             onStatusChange('');
+                                            onPriorityChange('');
                                             setIsOpen(false);
                                         }}
                                         className="w-full flex items-center gap-3 px-4 py-3 text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors"

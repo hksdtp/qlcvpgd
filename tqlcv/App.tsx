@@ -110,6 +110,7 @@ const App: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedDepartment, setSelectedDepartment] = useState<string>('');
     const [selectedStatus, setSelectedStatus] = useState<string>('');
+    const [selectedPriority, setSelectedPriority] = useState<string>('');
 
     // Google Sheets integration
     const { tasks, loading, error, isOnline, lastSync, actions, isConfigured } = useGoogleSheets();
@@ -266,9 +267,14 @@ const App: React.FC = () => {
                 return false;
             }
 
+            // Priority filter
+            if (selectedPriority && task.priority !== selectedPriority) {
+                return false;
+            }
+
             return true;
         });
-    }, [tasks, selectedUser, searchQuery, selectedDepartment, selectedStatus]);
+    }, [tasks, selectedUser, searchQuery, selectedDepartment, selectedStatus, selectedPriority]);
 
     // Get department counts
     const departmentCounts = useMemo(() => {
@@ -289,6 +295,17 @@ const App: React.FC = () => {
         });
         return counts;
     }, [tasks]);
+
+    // Get priority counts
+    const priorityCounts = useMemo(() => {
+        const counts: { [key: string]: number } = {};
+        filteredTasks.forEach(task => {
+            if (task.priority) {
+                counts[task.priority] = (counts[task.priority] || 0) + 1;
+            }
+        });
+        return counts;
+    }, [filteredTasks]);
 
 
     
@@ -414,10 +431,13 @@ const App: React.FC = () => {
                             <FilterMenu
                                 selectedDepartment={selectedDepartment}
                                 selectedStatus={selectedStatus}
+                                selectedPriority={selectedPriority}
                                 onDepartmentChange={setSelectedDepartment}
                                 onStatusChange={setSelectedStatus}
+                                onPriorityChange={setSelectedPriority}
                                 departmentCounts={departmentCounts}
                                 statusCounts={statusCounts}
+                                priorityCounts={priorityCounts}
                                 totalTasks={filteredTasks.length}
                             />
                             <div className="relative flex-1">
