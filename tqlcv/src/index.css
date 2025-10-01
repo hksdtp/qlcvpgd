@@ -58,20 +58,58 @@
   }
 }
 
+/* Dropdown animation - smooth and fast */
+@keyframes dropdown-open {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Button press animation */
+@keyframes button-press {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+/* Success pulse animation */
+@keyframes success-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 .animate-slide-up {
-  animation: modal-appear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: modal-appear 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .animate-slide-in-left {
-  animation: slide-in-left 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+  animation: slide-in-left 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .animate-ios-bounce {
-  animation: ios-bounce 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: ios-bounce 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .animate-card-lift {
-  animation: card-lift 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation: card-lift 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-dropdown-open {
+  animation: dropdown-open 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-button-press {
+  animation: button-press 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.animate-success-pulse {
+  animation: success-pulse 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* Gmail-style base styles */
@@ -98,6 +136,19 @@ body {
 /* Smooth scroll behavior for mobile inputs */
 html {
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  height: 100%;
+  width: 100%;
+}
+
+/* Mobile-optimized scrolling - Lock body, allow scroll in containers */
+body {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 /* Enhanced focus styles for mobile inputs */
@@ -133,7 +184,7 @@ button:active {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Desktop & Mobile */
 .scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: rgb(203 213 225) transparent;
@@ -156,6 +207,35 @@ button:active {
   background-color: rgb(148 163 184);
 }
 
+/* Always visible scrollbar for task list */
+.overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+  -webkit-appearance: none;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.6);
+  border-radius: 3px;
+  min-height: 30px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:active {
+  background-color: #475569;
+}
+
 /* Badge styles for departments and status */
 .badge {
   @apply px-2.5 py-1 text-xs rounded-full border transition-colors;
@@ -171,6 +251,17 @@ button:active {
 
 /* Mobile responsive improvements */
 @media (max-width: 768px) {
+  /* Force full height for mobile layout - CRITICAL FIX */
+  #root {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile browsers */
+    width: 100vw;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+  }
+
   .task-card {
     @apply text-sm;
   }
@@ -198,6 +289,30 @@ button:active {
     animation: modal-appear 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
+  /* Fix mobile scrolling issues - ENHANCED */
+  .mobile-scroll-container {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    height: 100%;
+    position: relative;
+  }
+
+  /* Smooth momentum scrolling for iOS - ENHANCED */
+  .ios-momentum-scroll {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto !important;
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+  }
+
+  /* Prevent scroll bounce */
+  .no-scroll-bounce {
+    overscroll-behavior: contain;
+    overscroll-behavior-y: contain;
+  }
+
   /* Better touch targets on mobile */
   .modal-close-btn {
     @apply p-3 min-w-[44px] min-h-[44px];
@@ -210,6 +325,15 @@ button:active {
 
   .modal-content-mobile {
     @apply max-h-[85vh] w-full;
+  }
+
+  /* CRITICAL: Ensure scrollable containers work on mobile */
+  .flex-1.overflow-y-auto {
+    -webkit-overflow-scrolling: touch !important;
+    overflow-y: auto !important;
+    height: auto;
+    min-height: 0;
+    flex: 1 1 0%;
   }
 }
 

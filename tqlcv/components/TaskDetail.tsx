@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Task, TaskStatus, TaskPriority, Subtask, SelectOption, User, Comment, DEPARTMENTS, DEPARTMENT_COLORS, STATUS_COLORS, PRIORITY_COLORS } from '../types';
+import { DepartmentIcons, DepartmentIconsSolid, PriorityIcons, PriorityIconsSolid, StatusIcons, StatusIconsSolid } from './IconLibrary';
 
 // Professional SVG Icons for TaskDetail
 const TaskDetailIcons = {
@@ -98,8 +99,8 @@ const statusOptions: SelectOption[] = [
     { value: TaskStatus.ToDo, label: TaskStatus.ToDo },
     { value: TaskStatus.InProgress, label: TaskStatus.InProgress },
     { value: TaskStatus.Done, label: TaskStatus.Done },
-    { value: TaskStatus.Backlog, label: TaskStatus.Backlog },
-    { value: TaskStatus.Stopped, label: TaskStatus.Stopped },
+    { value: TaskStatus.OnHold, label: TaskStatus.OnHold },
+    { value: TaskStatus.Paused, label: TaskStatus.Paused },
 ];
 
 const departmentOptions: SelectOption[] = DEPARTMENTS.map(dept => ({
@@ -123,11 +124,12 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
     const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
     const [editingCommentContent, setEditingCommentContent] = useState('');
     const [isEditingTask, setIsEditingTask] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
-    // Permission system: Check if current user is task owner
+    // Permission system: Allow all team members to edit tasks for collaboration
     const isTaskOwner = selectedUser && task.createdBy === selectedUser.id;
-    const canEditTask = !isReadOnly && isTaskOwner;
-    const canDeleteTask = !isReadOnly && isTaskOwner;
+    const canEditTask = !isReadOnly; // Allow all users to edit for team collaboration
+    const canDeleteTask = !isReadOnly && isTaskOwner; // Only owner can delete
 
     // Refs for mobile keyboard handling
     const subtaskInputRef = useRef<HTMLInputElement>(null);
@@ -249,7 +251,17 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
     };
 
     const handleSelectChange = (field: 'status' | 'department' | 'priority', value: string) => {
-        setEditedTask(prev => ({...prev, [field]: value}));
+        const updatedTask = {...editedTask, [field]: value};
+        setEditedTask(updatedTask);
+
+        // Immediately sync status changes to Google Sheets
+        if (field === 'status') {
+            console.log(`🔄 Status changed from "${editedTask.status}" to "${value}"`);
+            onUpdate(updatedTask);
+        } else {
+            // For other fields, use debounced update
+            debouncedUpdate(updatedTask);
+        }
     };
 
     const handleSubtaskToggle = (subtaskId: string) => {
@@ -422,9 +434,20 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
         });
     };
 
-    const handleSaveChanges = () => {
-        if (!canEditTask) return;
-        onUpdate(editedTask);
+    const handleSaveChanges = async () => {
+        if (!canEditTask || isSaving) return;
+
+        setIsSaving(true);
+        try {
+            await onUpdate(editedTask);
+            // Exit edit mode after successful save
+            setIsEditingTask(false);
+        } catch (error) {
+            console.error('Failed to save changes:', error);
+            // Keep edit mode on error so user can retry
+        } finally {
+            setIsSaving(false);
+        }
     };
     
     const hasChanges = JSON.stringify(task) !== JSON.stringify(editedTask);
@@ -449,8 +472,24 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                     </div>
                     <div className="flex items-center gap-1 md:gap-2 flex-shrink-0 pl-2">
                         {canEditTask && hasChanges && (
-                            <button onClick={handleSaveChanges} className="p-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-full transition-colors flex items-center gap-2 pl-3 pr-4 text-sm font-semibold shadow-lg shadow-indigo-500/30">
-                                <TaskDetailIcons.Check /> <span>Lưu</span>
+                            <button
+                                onClick={handleSaveChanges}
+                                disabled={isSaving}
+                                className="p-2 text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed rounded-full transition-all duration-200 flex items-center gap-2 pl-3 pr-4 text-sm font-semibold shadow-lg shadow-indigo-500/30 hover:scale-105 active:scale-95"
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span>Đang lưu...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <TaskDetailIcons.Check /> <span>Lưu</span>
+                                    </>
+                                )}
                             </button>
                         )}
                         {canDeleteTask && (
@@ -465,127 +504,246 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
 
             
             <div className="flex-grow overflow-y-auto overflow-x-hidden">
-                {/* Department - Status - Actions in One Line */}
+                {/* Department - Status - Actions in One Line - REDESIGNED */}
                 <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
                     {/* Left side: Department, Status, and Priority */}
                     <div className="flex items-center gap-3 flex-wrap">
-                        {/* Department */}
+                        {/* Department - Modern Design */}
                         <div className="department-dropdown relative">
                             <button
                                 onClick={() => !isReadOnly && isEditingTask && setShowDepartmentDropdown(!showDepartmentDropdown)}
                                 disabled={isReadOnly || !isEditingTask}
-                                className={`px-3 py-2 rounded-lg border font-medium text-sm transition-all duration-200 ${
-                                    DEPARTMENT_COLORS[editedTask.department || 'CV Chung'] || 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'
-                                } ${(!isReadOnly && isEditingTask) ? 'cursor-pointer hover:scale-105 hover:shadow-sm' : 'cursor-default'}`}
+                                className={`
+                                    px-4 py-2.5 rounded-xl font-semibold text-sm
+                                    transition-all duration-200
+                                    ${(!isReadOnly && isEditingTask)
+                                        ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-2 border-blue-200 hover:border-blue-300 hover:shadow-md cursor-pointer'
+                                        : 'bg-slate-100 text-slate-600 border-2 border-slate-200 cursor-default'
+                                    }
+                                `}
                             >
-                                {editedTask.department || 'CV Chung'}
-                                {(!isReadOnly && isEditingTask) && (
-                                    <svg className="w-4 h-4 ml-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                )}
+                                <span className="flex items-center gap-2">
+                                    {DepartmentIcons[editedTask.department || 'CV Chung']?.({ className: "w-4 h-4" })}
+                                    {editedTask.department || 'CV Chung'}
+                                    {(!isReadOnly && isEditingTask) && (
+                                        <svg className={`w-4 h-4 transition-transform duration-200 ${showDepartmentDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    )}
+                                </span>
                             </button>
 
-                            {/* Department Dropdown */}
+                            {/* Department Dropdown - Modern Design */}
                             {showDepartmentDropdown && !isReadOnly && isEditingTask && (
-                                <div className="absolute z-10 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-2">
-                                    {departmentOptions.map((option) => (
-                                        <button
-                                            key={option.value}
-                                            onClick={() => {
-                                                handleSelectChange('department', option.value);
-                                                setShowDepartmentDropdown(false);
-                                            }}
-                                            className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition-colors ${
-                                                editedTask.department === option.value ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700'
-                                            }`}
-                                        >
-                                            <span className={`inline-block px-2 py-1 rounded-lg border text-xs mr-2 ${
-                                                DEPARTMENT_COLORS[option.value] || 'bg-gray-100 text-gray-800 border-gray-200'
-                                            }`}>
-                                                {option.label}
-                                            </span>
-                                        </button>
-                                    ))}
+                                <div className="absolute z-50 mt-2 w-64 bg-white rounded-2xl shadow-2xl border-2 border-slate-200 overflow-hidden animate-dropdown-open">
+                                    <div className="max-h-80 overflow-y-auto">
+                                        {departmentOptions.map((option, index) => {
+                                            const isSelected = editedTask.department === option.value;
+                                            return (
+                                                <button
+                                                    key={option.value}
+                                                    onClick={() => {
+                                                        handleSelectChange('department', option.value);
+                                                        setShowDepartmentDropdown(false);
+                                                    }}
+                                                    className={`
+                                                        w-full flex items-center justify-between gap-3 px-4 py-3.5
+                                                        transition-all duration-150
+                                                        ${isSelected
+                                                            ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-l-4 border-blue-500'
+                                                            : 'text-slate-700 hover:bg-slate-50 border-l-4 border-transparent'
+                                                        }
+                                                        ${index !== 0 ? 'border-t border-slate-100' : ''}
+                                                    `}
+                                                >
+                                                    <span className="flex items-center gap-3">
+                                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                                            isSelected ? 'bg-blue-100' : 'bg-slate-100'
+                                                        }`}>
+                                                            {isSelected
+                                                                ? DepartmentIconsSolid[option.value]?.({ className: "w-4 h-4" })
+                                                                : DepartmentIcons[option.value]?.({ className: "w-4 h-4" })
+                                                            }
+                                                        </div>
+                                                        <span className="font-semibold">{option.label}</span>
+                                                    </span>
+                                                    {isSelected && (
+                                                        <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
                         </div>
 
-                        {/* Priority */}
+                        {/* Priority - Modern Design */}
                         <div className="priority-dropdown relative">
                             <button
                                 onClick={() => canEditTask && isEditingTask && setShowPriorityDropdown(!showPriorityDropdown)}
                                 disabled={!canEditTask || !isEditingTask}
-                                className={`px-3 py-2 rounded-lg border font-bold text-sm transition-all duration-200 priority-badge ${
-                                    editedTask.priority ? PRIORITY_COLORS[editedTask.priority] : 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'
-                                } ${(canEditTask && isEditingTask) ? 'cursor-pointer hover:scale-105 hover:shadow-sm' : 'cursor-default'}`}
+                                className={`
+                                    px-4 py-2.5 rounded-xl font-bold text-sm
+                                    transition-all duration-200
+                                    ${(canEditTask && isEditingTask)
+                                        ? editedTask.priority === 'CAO'
+                                            ? 'bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border-2 border-red-200 hover:border-red-300 hover:shadow-md cursor-pointer'
+                                            : editedTask.priority === 'TRUNG BÌNH'
+                                            ? 'bg-gradient-to-r from-yellow-50 to-amber-50 text-yellow-700 border-2 border-yellow-200 hover:border-yellow-300 hover:shadow-md cursor-pointer'
+                                            : 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-2 border-green-200 hover:border-green-300 hover:shadow-md cursor-pointer'
+                                        : 'bg-slate-100 text-slate-600 border-2 border-slate-200 cursor-default'
+                                    }
+                                `}
                             >
-                                {editedTask.priority || 'TRUNG BÌNH'}
-                                {(canEditTask && isEditingTask) && (
-                                    <svg className="w-4 h-4 ml-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                )}
+                                <span className="flex items-center gap-2">
+                                    {PriorityIcons[editedTask.priority || 'TRUNG BÌNH']?.({ className: "w-4 h-4" })}
+                                    {editedTask.priority || 'TRUNG BÌNH'}
+                                    {(canEditTask && isEditingTask) && (
+                                        <svg className={`w-4 h-4 transition-transform duration-200 ${showPriorityDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    )}
+                                </span>
                             </button>
 
+                            {/* Priority Dropdown - Modern Design */}
                             {showPriorityDropdown && (canEditTask && isEditingTask) && (
-                                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[120px]">
-                                    {priorityOptions.map((option) => (
-                                        <button
-                                            key={option.value}
-                                            onClick={() => {
-                                                handleSelectChange('priority', option.value);
-                                                setShowPriorityDropdown(false);
-                                            }}
-                                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg font-bold priority-badge ${
-                                                PRIORITY_COLORS[option.value] || 'bg-gray-100 text-gray-800'
-                                            }`}
-                                        >
-                                            {option.label}
-                                        </button>
-                                    ))}
+                                <div className="absolute z-50 mt-2 w-56 bg-white rounded-2xl shadow-2xl border-2 border-slate-200 overflow-hidden animate-dropdown-open">
+                                    <div className="max-h-80 overflow-y-auto">
+                                        {priorityOptions.map((option, index) => {
+                                            const isSelected = editedTask.priority === option.value;
+                                            const priorityStyles = {
+                                                'CAO': {
+                                                    bg: isSelected ? 'bg-gradient-to-r from-red-50 to-rose-50' : '',
+                                                    text: isSelected ? 'text-red-700' : 'text-slate-700',
+                                                    border: isSelected ? 'border-l-4 border-red-500' : 'border-l-4 border-transparent',
+                                                    iconBg: isSelected ? 'bg-red-100' : 'bg-slate-100',
+                                                    dot: 'bg-red-500'
+                                                },
+                                                'TRUNG BÌNH': {
+                                                    bg: isSelected ? 'bg-gradient-to-r from-yellow-50 to-amber-50' : '',
+                                                    text: isSelected ? 'text-yellow-700' : 'text-slate-700',
+                                                    border: isSelected ? 'border-l-4 border-yellow-500' : 'border-l-4 border-transparent',
+                                                    iconBg: isSelected ? 'bg-yellow-100' : 'bg-slate-100',
+                                                    dot: 'bg-yellow-500'
+                                                },
+                                                'THẤP': {
+                                                    bg: isSelected ? 'bg-gradient-to-r from-green-50 to-emerald-50' : '',
+                                                    text: isSelected ? 'text-green-700' : 'text-slate-700',
+                                                    border: isSelected ? 'border-l-4 border-green-500' : 'border-l-4 border-transparent',
+                                                    iconBg: isSelected ? 'bg-green-100' : 'bg-slate-100',
+                                                    dot: 'bg-green-500'
+                                                }
+                                            };
+                                            const style = priorityStyles[option.value as keyof typeof priorityStyles];
+
+                                            return (
+                                                <button
+                                                    key={option.value}
+                                                    onClick={() => {
+                                                        handleSelectChange('priority', option.value);
+                                                        setShowPriorityDropdown(false);
+                                                    }}
+                                                    className={`
+                                                        w-full flex items-center justify-between gap-3 px-4 py-3.5
+                                                        transition-all duration-150
+                                                        ${isSelected ? `${style.bg} ${style.text} ${style.border}` : `${style.text} hover:bg-slate-50 ${style.border}`}
+                                                        ${index !== 0 ? 'border-t border-slate-100' : ''}
+                                                    `}
+                                                >
+                                                    <span className="flex items-center gap-3">
+                                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${style.iconBg}`}>
+                                                            {isSelected
+                                                                ? PriorityIconsSolid[option.value]?.({ className: "w-5 h-5" })
+                                                                : PriorityIcons[option.value]?.({ className: "w-5 h-5" })
+                                                            }
+                                                        </div>
+                                                        <span className="font-bold">{option.label}</span>
+                                                    </span>
+                                                    {isSelected && (
+                                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
                         </div>
 
-                        {/* Status */}
+                        {/* Status - Modern Design */}
                         <div className="status-dropdown relative">
                             <button
                                 onClick={() => !isReadOnly && isEditingTask && setShowStatusDropdown(!showStatusDropdown)}
                                 disabled={isReadOnly || !isEditingTask}
-                                className={`px-3 py-2 rounded-lg border font-medium text-sm transition-all duration-200 ${
-                                    STATUS_COLORS[editedTask.status] || 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'
-                                } ${(!isReadOnly && isEditingTask) ? 'cursor-pointer hover:scale-105 hover:shadow-sm' : 'cursor-default'}`}
+                                className={`
+                                    px-4 py-2.5 rounded-xl font-semibold text-sm
+                                    transition-all duration-200
+                                    ${(!isReadOnly && isEditingTask)
+                                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-2 border-green-200 hover:border-green-300 hover:shadow-md cursor-pointer'
+                                        : 'bg-slate-100 text-slate-600 border-2 border-slate-200 cursor-default'
+                                    }
+                                `}
                             >
-                                {editedTask.status}
-                                {(!isReadOnly && isEditingTask) && (
-                                    <svg className="w-4 h-4 ml-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                )}
+                                <span className="flex items-center gap-2">
+                                    {StatusIcons[editedTask.status]?.({ className: "w-4 h-4" })}
+                                    {editedTask.status}
+                                    {(!isReadOnly && isEditingTask) && (
+                                        <svg className={`w-4 h-4 transition-transform duration-200 ${showStatusDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    )}
+                                </span>
                             </button>
 
-                            {/* Status Dropdown */}
+                            {/* Status Dropdown - Modern Design */}
                             {showStatusDropdown && !isReadOnly && isEditingTask && (
-                                <div className="absolute z-10 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-2">
-                                    {statusOptions.map((option) => (
-                                        <button
-                                            key={option.value}
-                                            onClick={() => {
-                                                handleSelectChange('status', option.value);
-                                                setShowStatusDropdown(false);
-                                            }}
-                                            className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition-colors ${
-                                                editedTask.status === option.value ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700'
-                                            }`}
-                                        >
-                                            <span className={`inline-block px-2 py-1 rounded-lg border text-xs mr-2 ${
-                                                STATUS_COLORS[option.value] || 'bg-gray-100 text-gray-800 border-gray-200'
-                                            }`}>
-                                                {option.label}
-                                            </span>
-                                        </button>
-                                    ))}
+                                <div className="absolute z-50 mt-2 w-64 bg-white rounded-2xl shadow-2xl border-2 border-slate-200 overflow-hidden animate-dropdown-open">
+                                    <div className="max-h-80 overflow-y-auto">
+                                        {statusOptions.map((option, index) => {
+                                            const isSelected = editedTask.status === option.value;
+                                            return (
+                                                <button
+                                                    key={option.value}
+                                                    onClick={() => {
+                                                        handleSelectChange('status', option.value);
+                                                        setShowStatusDropdown(false);
+                                                    }}
+                                                    className={`
+                                                        w-full flex items-center justify-between gap-3 px-4 py-3.5
+                                                        transition-all duration-150
+                                                        ${isSelected
+                                                            ? 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-l-4 border-green-500'
+                                                            : 'text-slate-700 hover:bg-slate-50 border-l-4 border-transparent'
+                                                        }
+                                                        ${index !== 0 ? 'border-t border-slate-100' : ''}
+                                                    `}
+                                                >
+                                                    <span className="flex items-center gap-3">
+                                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                                            isSelected ? 'bg-green-100' : 'bg-slate-100'
+                                                        }`}>
+                                                            {isSelected
+                                                                ? StatusIconsSolid[option.value]?.({ className: "w-4 h-4" })
+                                                                : StatusIcons[option.value]?.({ className: "w-4 h-4" })
+                                                            }
+                                                        </div>
+                                                        <span className="font-semibold">{option.label}</span>
+                                                    </span>
+                                                    {isSelected && (
+                                                        <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -596,10 +754,23 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
                         {canEditTask && hasChanges && (
                             <button
                                 onClick={handleSaveChanges}
-                                className="px-3 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium shadow-sm ios-button macos-hover no-zoom"
+                                disabled={isSaving}
+                                className="px-3 py-2 text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-sm ios-button macos-hover no-zoom hover:scale-105 active:scale-95"
                             >
-                                <TaskDetailIcons.Check />
-                                <span className="hidden sm:inline">Lưu</span>
+                                {isSaving ? (
+                                    <>
+                                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span className="hidden sm:inline">Đang lưu...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <TaskDetailIcons.Check />
+                                        <span className="hidden sm:inline">Lưu</span>
+                                    </>
+                                )}
                             </button>
                         )}
                         {!isReadOnly && (
@@ -829,5 +1000,27 @@ const TaskDetail: React.FC<TaskDetailProps> = ({ task, onClose, onUpdate, onDele
         </div>
     );
 };
+
+// Add CSS animation for dropdown
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes dropdown-open {
+        from {
+            opacity: 0;
+            transform: translateY(-8px) scale(0.96);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    .animate-dropdown-open {
+        animation: dropdown-open 0.15s ease-out forwards;
+    }
+`;
+if (typeof document !== 'undefined' && !document.getElementById('task-detail-dropdown-styles')) {
+    style.id = 'task-detail-dropdown-styles';
+    document.head.appendChild(style);
+}
 
 export default TaskDetail;

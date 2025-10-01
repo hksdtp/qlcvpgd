@@ -1,5 +1,5 @@
 // Enhanced App component with Google Sheets integration
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Task, TaskStatus, User } from './types';
 import KanbanColumn from './components/KanbanColumn';
 import AddTaskModal from './components/AddTaskModal';
@@ -115,7 +115,7 @@ const App: React.FC = () => {
     // Google Sheets integration
     const { tasks, loading, error, isOnline, lastSync, actions, isConfigured } = useGoogleSheets();
 
-    // Load user from localStorage
+    // Load user from localStorage - only run once on mount
     useEffect(() => {
         const savedUser = localStorage.getItem('currentUser');
         const savedSelectedUser = localStorage.getItem('selectedUser');
@@ -124,8 +124,11 @@ const App: React.FC = () => {
             try {
                 const user = JSON.parse(savedUser);
                 setCurrentUser(user);
-                // CRITICAL FIX: Set current user in Google Sheets service when loading from localStorage
-                actions.setCurrentUser(user.id);
+                // Set current user in Google Sheets service when loading from localStorage
+                // Use setTimeout to ensure actions is available after initial render
+                setTimeout(() => {
+                    actions.setCurrentUser(user.id);
+                }, 0);
                 console.log(`🔄 Restored user from localStorage: ${user.name} (${user.id})`);
             } catch (error) {
                 console.error('Error loading user:', error);
@@ -139,7 +142,7 @@ const App: React.FC = () => {
                 console.error('Error loading selected user:', error);
             }
         }
-    }, [actions]);
+    }, []); // Empty dependency array - only run once on mount
 
     // Handle user selection from UserSelection component
     const handleUserSelect = (user: SelectedUser) => {
@@ -170,7 +173,7 @@ const App: React.FC = () => {
     // For now, allow all users to comment and interact
     const isReadOnly = false; // currentUser?.role === 'viewer'; // Uncomment if you want viewer-only role
 
-    const handleAddTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'subtasks'>) => {
+    const handleAddTask = useCallback(async (taskData: Omit<Task, 'id' | 'createdAt' | 'subtasks'>) => {
         if (isReadOnly) return;
 
         try {
@@ -184,34 +187,41 @@ const App: React.FC = () => {
         } catch (error) {
             console.error('❌ Failed to add task:', error);
         }
-    };
+    }, [isReadOnly, actions, currentUser?.id]);
 
-    const handleSelectTask = (task: Task) => {
+    const handleSelectTask = useCallback((task: Task) => {
         setSelectedTask(task);
         // Mark task as read when selected (Gmail-style)
         if (!task.isRead) {
             const updatedTask = { ...task, isRead: true };
-            handleUpdateTask(updatedTask);
+            // Update without setting selectedTask to avoid re-opening modal
+            actions.updateTask(updatedTask).catch(error => {
+                console.error('❌ Failed to mark task as read:', error);
+            });
         }
-    };
+    }, [actions]);
 
-    const handleCloseDetail = () => {
+    const handleCloseDetail = useCallback(() => {
         setSelectedTask(null);
-    };
+    }, []);
 
-    const handleUpdateTask = async (updatedTask: Task) => {
+    const handleUpdateTask = useCallback(async (updatedTask: Task) => {
         if (isReadOnly) return;
 
         try {
-            await actions.updateTask(updatedTask);
+            // Optimistic update: Update UI immediately
             setSelectedTask(updatedTask);
+
+            // Sync with backend in background
+            await actions.updateTask(updatedTask);
             console.log('✅ Task updated successfully');
         } catch (error) {
             console.error('❌ Failed to update task:', error);
+            // Revert on error (optional: could show error toast)
         }
-    };
+    }, [isReadOnly, actions]);
 
-    const handleDeleteTask = async (taskId: string) => {
+    const handleDeleteTask = useCallback(async (taskId: string) => {
         if (isReadOnly) return;
 
         try {
@@ -221,9 +231,9 @@ const App: React.FC = () => {
         } catch (error) {
             console.error('❌ Failed to delete task:', error);
         }
-    };
+    }, [isReadOnly, actions]);
 
-    const handleRefresh = async () => {
+    const handleRefresh = useCallback(async () => {
         console.log('🔄 Refresh button clicked');
         try {
             console.log('📊 Current tasks count:', tasks.length);
@@ -233,17 +243,64 @@ const App: React.FC = () => {
         } catch (error) {
             console.error('❌ Failed to refresh:', error);
         }
-    };
+    }, [tasks.length, actions]);
 
     const filteredTasks = useMemo(() => {
-        const sorted = [...tasks].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        // Multi-level sorting: Priority → Status → CreatedAt
+        const sorted = [...tasks].sort((a, b) => {
+            // 1. Sort by Priority (CAO → TRUNG BÌNH → THẤP)
+            const priorityOrder: { [key: string]: number } = {
+                'CAO': 1,
+                'TRUNG BÌNH': 2,
+                'THẤP': 3
+            };
+            const priorityA = priorityOrder[a.priority || 'TRUNG BÌNH'] || 4;
+            const priorityB = priorityOrder[b.priority || 'TRUNG BÌNH'] || 4;
+
+            if (priorityA !== priorityB) {
+                return priorityA - priorityB; // Lower number = higher priority
+            }
+
+            // 2. Sort by Status (Active statuses first)
+            const statusOrder: { [key: string]: number } = {
+                'Đang làm': 1,
+                'Lên Kế Hoạch': 2,
+                'Cần làm': 3,
+                'Chưa làm': 4,
+                'Tồn đọng': 5,
+                'Dừng': 6,
+                'Hoàn thành': 7
+            };
+            const statusA = statusOrder[a.status] || 8;
+            const statusB = statusOrder[b.status] || 8;
+
+            if (statusA !== statusB) {
+                return statusA - statusB; // Lower number = higher priority
+            }
+
+            // 3. Sort by CreatedAt (Newest first)
+            const dateA = new Date(a.createdAt || 0).getTime();
+            const dateB = new Date(b.createdAt || 0).getTime();
+            return dateB - dateA; // Descending order (newest first)
+        });
 
         // Apply department-based filtering based on user permissions
         let roleFiltered = sorted;
-        if (selectedUser?.allowedDepartments) {
-            roleFiltered = sorted.filter(task =>
-                !task.department || selectedUser.allowedDepartments!.includes(task.department as any)
-            );
+        if (selectedUser?.allowedDepartments && selectedUser.allowedDepartments.length > 0) {
+            roleFiltered = sorted.filter(task => {
+                // If task has no department, show it
+                if (!task.department) return true;
+
+                // Check if user's allowed departments includes task's department
+                const isAllowed = selectedUser.allowedDepartments!.includes(task.department);
+
+                // Debug logging
+                if (!isAllowed) {
+                    console.log(`🚫 Task "${task.title}" filtered out - Department: "${task.department}" not in allowed:`, selectedUser.allowedDepartments);
+                }
+
+                return isAllowed;
+            });
         }
 
         return roleFiltered.filter(task => {
@@ -369,10 +426,10 @@ const App: React.FC = () => {
     return (
         <ErrorBoundary>
             <div className="h-screen w-screen overflow-hidden animate-app-fade-in">
-            <div className="flex h-full">
+            <div className="flex h-full w-full">
                 {/* --- Sidebar (Task List) --- */}
                 <aside className={`
-                    absolute md:relative w-full md:w-96 bg-slate-50/70 backdrop-blur-2xl border-r border-slate-300/50 
+                    absolute md:relative w-full md:w-96 h-full bg-slate-50/70 backdrop-blur-2xl border-r border-slate-300/50
                     flex flex-col flex-shrink-0 transition-transform duration-300 ease-in-out
                     ${selectedTask ? '-translate-x-full md:translate-x-0' : 'translate-x-0'}
                 `}>
@@ -457,13 +514,13 @@ const App: React.FC = () => {
 
                     {/* Filters - Hidden, now using FilterMenu */}
 
-                    <div className="flex-grow overflow-y-auto pb-20">
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain webkit-overflow-scrolling-touch min-h-0">
                         {loading && tasks.length === 0 ? (
                             <div className="flex items-center justify-center h-64">
                                 <LoadingSpinner message="Đang tải dữ liệu từ Google Sheets..." />
                             </div>
                         ) : (
-                            <div className="pb-8">
+                            <div className="pb-24 md:pb-8 px-4">
                                 <KanbanColumn
                                     tasks={filteredTasks}
                                     onSelectTask={handleSelectTask}
