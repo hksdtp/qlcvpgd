@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Task, TaskStatus, TaskPriority, DEPARTMENTS, DEPARTMENT_COLORS, STATUS_COLORS, PRIORITY_COLORS } from '../types';
+import { DepartmentIcons, DepartmentIconsSolid, PriorityIcons, PriorityIconsSolid, StatusIcons, StatusIconsSolid } from './IconLibrary';
 
 // Status configurations
 
-// Gmail-style SVG icons for departments
-const DEPARTMENT_ICONS: { [key: string]: JSX.Element } = {
+// Legacy icons - will be replaced by IconLibrary
+const DEPARTMENT_ICONS_OLD: { [key: string]: JSX.Element } = {
     'CV Chung': (
         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
@@ -169,8 +170,8 @@ const FilterMenu: React.FC<FilterMenuProps> = ({
                             </button>
                         </div>
 
-                        {/* Gmail-style Navigation */}
-                        <div className="py-2">
+                        {/* Modern Navigation */}
+                        <div className="p-3">
                             {/* All Tasks */}
                             <button
                                 onClick={() => {
@@ -178,139 +179,194 @@ const FilterMenu: React.FC<FilterMenuProps> = ({
                                     onStatusChange('');
                                     setIsOpen(false);
                                 }}
-                                className={`w-full flex items-center gap-4 px-4 py-3 text-left hover:bg-red-50 transition-colors ${
-                                    !selectedDepartment && !selectedStatus ? 'bg-red-100 text-red-700 border-r-4 border-red-500' : 'text-slate-700'
+                                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all duration-200 ${
+                                    !selectedDepartment && !selectedStatus && !selectedPriority
+                                        ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-lg'
+                                        : 'text-slate-700 hover:bg-slate-100'
                                 }`}
                             >
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 16a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                                </svg>
-                                <span className="flex-1 font-medium font-roboto text-gmail-gray-800">Tất cả công việc</span>
-                                <span className={`text-sm px-2 py-1 rounded-full ${
-                                    !selectedDepartment && !selectedStatus ? 'bg-red-200 text-red-800' : 'bg-slate-200 text-slate-600'
+                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                                    !selectedDepartment && !selectedStatus && !selectedPriority ? 'bg-white/20' : 'bg-slate-100'
+                                }`}>
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 16a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <span className="flex-1 font-bold">Tất cả công việc</span>
+                                <span className={`text-xs font-bold px-2.5 py-1.5 rounded-full ${
+                                    !selectedDepartment && !selectedStatus && !selectedPriority
+                                        ? 'bg-white/20 text-white'
+                                        : 'bg-slate-200 text-slate-700'
                                 }`}>
                                     {totalTasks > 99 ? '99+' : totalTasks}
                                 </span>
                             </button>
 
-                            {/* Department Filters */}
-                            <div className="mt-2">
-                                {DEPARTMENTS.map(dept => {
-                                    const count = departmentCounts[dept] || 0;
-                                    if (count === 0) return null;
-                                    const isActive = selectedDepartment === dept;
-                                    return (
-                                        <button
-                                            key={dept}
-                                            onClick={() => {
-                                                onDepartmentChange(dept);
-                                                onStatusChange('');
-                                                setIsOpen(false);
-                                            }}
-                                            className={`w-full flex items-center gap-4 px-4 py-3 text-left hover:bg-slate-50 transition-colors ${
-                                                isActive ? 'bg-blue-50 text-blue-700 border-r-4 border-blue-500' : 'text-slate-700'
-                                            }`}
-                                        >
-                                            {DEPARTMENT_ICONS[dept] || (
-                                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
-                                                </svg>
-                                            )}
-                                            <span className="flex-1 font-medium font-roboto text-gmail-gray-800">{dept}</span>
-                                            <span className={`px-2 py-1 text-xs rounded-full font-medium ml-2 border ${
-                                                DEPARTMENT_COLORS[dept] || 'bg-gray-100 text-gray-800 border-gray-200'
-                                            }`}>
-                                                {count > 99 ? '99+' : count}
-                                            </span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Status Filters */}
-                            <div className="mt-4 border-t border-slate-200 pt-2">
-                                <div className="px-4 py-2">
-                                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">TRẠNG THÁI</span>
+                            {/* Department Section */}
+                            <div className="mt-6">
+                                <div className="px-2 mb-2">
+                                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Phòng ban</h4>
                                 </div>
-                                {Object.keys(statusCounts).map(status => {
-                                    const count = statusCounts[status] || 0;
-                                    if (count === 0) return null;
-                                    const isActive = selectedStatus === status;
-                                    return (
-                                        <button
-                                            key={status}
-                                            onClick={() => {
-                                                onStatusChange(status);
-                                                onDepartmentChange('');
-                                                setIsOpen(false);
-                                            }}
-                                            className={`w-full flex items-center gap-4 px-4 py-3 text-left hover:bg-slate-50 transition-colors ${
-                                                isActive ? 'bg-green-50 text-green-700 border-r-4 border-green-500' : 'text-slate-700'
-                                            }`}
-                                        >
-                                            {STATUS_ICONS[status] || (
-                                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
-                                                </svg>
-                                            )}
-                                            <span className="flex-1">{status}</span>
-                                            <span className={`text-sm px-2 py-1 rounded-full ${
-                                                isActive ? 'bg-green-200 text-green-800' : 'bg-slate-200 text-slate-600'
-                                            }`}>
-                                                {count > 99 ? '99+' : count}
-                                            </span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Priority Filters */}
-                            <div className="mt-4 border-t border-slate-200 pt-2">
-                                <div className="px-4 py-2">
-                                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">ƯU TIÊN</span>
-                                </div>
-                                {Object.keys(priorityCounts).map(priority => {
-                                    const count = priorityCounts[priority] || 0;
-                                    if (count === 0) return null;
-                                    const isActive = selectedPriority === priority;
-                                    return (
-                                        <button
-                                            key={priority}
-                                            onClick={() => {
-                                                onPriorityChange(priority);
-                                                onDepartmentChange('');
-                                                onStatusChange('');
-                                                setIsOpen(false);
-                                            }}
-                                            className={`w-full flex items-center gap-4 px-4 py-3 text-left hover:bg-slate-50 transition-colors ${
-                                                isActive ? 'bg-green-50 text-green-700 border-r-4 border-green-500' : 'text-slate-700'
-                                            }`}
-                                        >
-                                            <div className={`w-3 h-3 rounded-full border-2 ${
-                                                priority === 'CAO' ? 'bg-red-500 border-red-500' :
-                                                priority === 'TRUNG BÌNH' ? 'bg-yellow-500 border-yellow-500' :
-                                                'bg-green-500 border-green-500'
-                                            }`} />
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center justify-between">
-                                                    <span className={`font-bold text-sm priority-badge ${
-                                                        PRIORITY_COLORS[priority] || 'text-slate-700'
-                                                    }`}>
-                                                        {priority}
-                                                    </span>
-                                                    <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-                                                        {count}
-                                                    </span>
+                                <div className="space-y-1">
+                                    {DEPARTMENTS.map(dept => {
+                                        const count = departmentCounts[dept] || 0;
+                                        if (count === 0) return null;
+                                        const isActive = selectedDepartment === dept;
+                                        return (
+                                            <button
+                                                key={dept}
+                                                onClick={() => {
+                                                    onDepartmentChange(dept);
+                                                    onStatusChange('');
+                                                    onPriorityChange('');
+                                                    setIsOpen(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
+                                                    isActive
+                                                        ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm border-2 border-blue-200'
+                                                        : 'text-slate-700 hover:bg-slate-100'
+                                                }`}
+                                            >
+                                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                                                    isActive ? 'bg-blue-100' : 'bg-slate-100'
+                                                }`}>
+                                                    {isActive
+                                                        ? DepartmentIconsSolid[dept]?.({ className: "w-5 h-5" })
+                                                        : DepartmentIcons[dept]?.({ className: "w-5 h-5" })
+                                                    }
                                                 </div>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
+                                                <span className="flex-1 font-semibold">{dept}</span>
+                                                <span className={`text-xs font-bold px-2.5 py-1.5 rounded-full ${
+                                                    isActive ? 'bg-blue-200 text-blue-800' : 'bg-slate-200 text-slate-600'
+                                                }`}>
+                                                    {count > 99 ? '99+' : count}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Status Section */}
+                            <div className="mt-6">
+                                <div className="px-2 mb-2">
+                                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Trạng thái</h4>
+                                </div>
+                                <div className="space-y-1">
+                                    {Object.keys(statusCounts).map(status => {
+                                        const count = statusCounts[status] || 0;
+                                        if (count === 0) return null;
+                                        const isActive = selectedStatus === status;
+                                        return (
+                                            <button
+                                                key={status}
+                                                onClick={() => {
+                                                    onStatusChange(status);
+                                                    onDepartmentChange('');
+                                                    onPriorityChange('');
+                                                    setIsOpen(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
+                                                    isActive
+                                                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 shadow-sm border-2 border-green-200'
+                                                        : 'text-slate-700 hover:bg-slate-100'
+                                                }`}
+                                            >
+                                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                                                    isActive ? 'bg-green-100' : 'bg-slate-100'
+                                                }`}>
+                                                    {isActive
+                                                        ? StatusIconsSolid[status]?.({ className: "w-5 h-5" })
+                                                        : StatusIcons[status]?.({ className: "w-5 h-5" })
+                                                    }
+                                                </div>
+                                                <span className="flex-1 font-semibold">{status}</span>
+                                                <span className={`text-xs font-bold px-2.5 py-1.5 rounded-full ${
+                                                    isActive ? 'bg-green-200 text-green-800' : 'bg-slate-200 text-slate-600'
+                                                }`}>
+                                                    {count > 99 ? '99+' : count}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Priority Section */}
+                            <div className="mt-6">
+                                <div className="px-2 mb-2">
+                                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Độ ưu tiên</h4>
+                                </div>
+                                <div className="space-y-1">
+                                    {Object.keys(priorityCounts).map(priority => {
+                                        const count = priorityCounts[priority] || 0;
+                                        if (count === 0) return null;
+                                        const isActive = selectedPriority === priority;
+
+                                        // Định nghĩa màu sắc cho từng mức độ ưu tiên
+                                        const priorityStyles = {
+                                            'CAO': {
+                                                bg: isActive ? 'bg-gradient-to-r from-red-50 to-rose-50' : '',
+                                                border: isActive ? 'border-2 border-red-200' : '',
+                                                text: isActive ? 'text-red-700' : 'text-slate-700',
+                                                iconBg: isActive ? 'bg-red-100' : 'bg-slate-100',
+                                                iconColor: 'text-red-600',
+                                                badgeBg: isActive ? 'bg-red-200 text-red-800' : 'bg-slate-200 text-slate-600'
+                                            },
+                                            'TRUNG BÌNH': {
+                                                bg: isActive ? 'bg-gradient-to-r from-yellow-50 to-amber-50' : '',
+                                                border: isActive ? 'border-2 border-yellow-200' : '',
+                                                text: isActive ? 'text-yellow-700' : 'text-slate-700',
+                                                iconBg: isActive ? 'bg-yellow-100' : 'bg-slate-100',
+                                                iconColor: 'text-yellow-600',
+                                                badgeBg: isActive ? 'bg-yellow-200 text-yellow-800' : 'bg-slate-200 text-slate-600'
+                                            },
+                                            'THẤP': {
+                                                bg: isActive ? 'bg-gradient-to-r from-green-50 to-emerald-50' : '',
+                                                border: isActive ? 'border-2 border-green-200' : '',
+                                                text: isActive ? 'text-green-700' : 'text-slate-700',
+                                                iconBg: isActive ? 'bg-green-100' : 'bg-slate-100',
+                                                iconColor: 'text-green-600',
+                                                badgeBg: isActive ? 'bg-green-200 text-green-800' : 'bg-slate-200 text-slate-600'
+                                            }
+                                        };
+
+                                        const style = priorityStyles[priority as keyof typeof priorityStyles] || priorityStyles['THẤP'];
+
+                                        return (
+                                            <button
+                                                key={priority}
+                                                onClick={() => {
+                                                    onPriorityChange(priority);
+                                                    onDepartmentChange('');
+                                                    onStatusChange('');
+                                                    setIsOpen(false);
+                                                }}
+                                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
+                                                    isActive
+                                                        ? `${style.bg} ${style.text} shadow-sm ${style.border}`
+                                                        : 'text-slate-700 hover:bg-slate-100'
+                                                }`}
+                                            >
+                                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${style.iconBg}`}>
+                                                    {isActive
+                                                        ? PriorityIconsSolid[priority]?.({ className: "w-5 h-5" })
+                                                        : PriorityIcons[priority]?.({ className: "w-5 h-5" })
+                                                    }
+                                                </div>
+                                                <span className="flex-1 font-semibold">{priority}</span>
+                                                <span className={`text-xs font-bold px-2.5 py-1.5 rounded-full ${style.badgeBg}`}>
+                                                    {count > 99 ? '99+' : count}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
 
                             {/* Clear All Button */}
                             {hasActiveFilters && (
-                                <div className="mt-4 border-t border-slate-200 pt-4 px-4">
+                                <div className="mt-6 pt-4 border-t border-slate-200">
                                     <button
                                         onClick={() => {
                                             onDepartmentChange('');
@@ -318,10 +374,12 @@ const FilterMenu: React.FC<FilterMenuProps> = ({
                                             onPriorityChange('');
                                             setIsOpen(false);
                                         }}
-                                        className="w-full flex items-center gap-3 px-4 py-3 text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl text-red-600 bg-red-50 hover:bg-red-100 border-2 border-red-200 transition-all duration-200 font-bold shadow-sm hover:shadow-md"
                                     >
-                                        <span className="text-lg">🗑️</span>
-                                        <span className="flex-1 font-medium">Xóa tất cả bộ lọc</span>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        <span>Xóa tất cả bộ lọc</span>
                                     </button>
                                 </div>
                             )}
