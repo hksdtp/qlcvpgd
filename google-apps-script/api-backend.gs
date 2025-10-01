@@ -13,7 +13,7 @@
 
 // ===== CONFIGURATION =====
 const CONFIG = {
-  SPREADSHEET_ID: '1nQVX_Jtwhwl3ApGlXuV6NthROZkejy6EMrFztw1k_vU', // Your spreadsheet ID
+  SPREADSHEET_ID: '1nQVX_Jtwhwl3ApGlXuV6NthROZkejy6EMrFztw1k_vU', // Task Management Database - 27/9/2025
   SHEET_NAME: 'Tasks',
   CORS_ORIGINS: [
     'http://localhost:3001',
@@ -44,6 +44,7 @@ function doOptions(e) {
 function handleRequest(e, method) {
   try {
     // Handle preflight OPTIONS request
+    // Google Apps Script automatically adds CORS headers when deployed as Web App with "Anyone" access
     if (method === 'OPTIONS') {
       return ContentService
         .createTextOutput('')
@@ -108,6 +109,7 @@ function handleRequest(e, method) {
         .setMimeType(ContentService.MimeType.JAVASCRIPT);
     }
 
+    // Google Apps Script automatically adds CORS headers when deployed as Web App with "Anyone" access
     return ContentService
       .createTextOutput(JSON.stringify(responseData))
       .setMimeType(ContentService.MimeType.JSON);
@@ -129,6 +131,7 @@ function handleRequest(e, method) {
         .setMimeType(ContentService.MimeType.JAVASCRIPT);
     }
 
+    // Google Apps Script automatically adds CORS headers when deployed as Web App with "Anyone" access
     return ContentService
       .createTextOutput(JSON.stringify(errorData))
       .setMimeType(ContentService.MimeType.JSON);
@@ -138,15 +141,15 @@ function handleRequest(e, method) {
 // ===== CRUD OPERATIONS =====
 
 /**
- * � Setup sheet headers if needed
+ * 📋 Setup sheet headers if needed
  */
 function setupHeaders(sheet) {
   const data = sheet.getDataRange().getValues();
-  if (data.length === 0 || !data[0] || data[0].length < 9) {
-    const headers = ['ID', 'Title', 'Description', 'Status', 'Department', 'Subtasks', 'CreatedAt', 'UpdatedAt', 'Comments'];
+  if (data.length === 0 || !data[0] || data[0].length < 10) {
+    const headers = ['ID', 'Title', 'Description', 'Status', 'Priority', 'Department', 'Subtasks', 'CreatedAt', 'UpdatedAt', 'Comments'];
     sheet.clear();
     sheet.appendRow(headers);
-    console.log('✅ Headers setup complete');
+    console.log('✅ Headers setup complete with Priority column');
   }
 }
 
@@ -172,12 +175,14 @@ function getTasks(sheet) {
 
       // Map English statuses back to Vietnamese for display
       const statusMap = {
+        'need-to-do': 'Cần làm',
         'todo': 'Chưa làm',
-        'in-progress': 'Đang làm',
         'planning': 'Lên Kế Hoạch',
+        'in-progress': 'Đang làm',
         'review': 'Đang Review',
         'completed': 'Hoàn thành',
-        'paused': 'Tạm dừng',
+        'on-hold': 'Tồn đọng',
+        'paused': 'Dừng',
         'cancelled': 'Hủy bỏ'
       };
 
@@ -190,11 +195,12 @@ function getTasks(sheet) {
         title: row[1] || '',
         description: row[2] || '',
         status: vietnameseStatus, // Convert back to Vietnamese for frontend
-        department: row[4] || '',
-        subtasks: row[5] ? JSON.parse(row[5]) : [],
-        createdAt: row[6] || new Date().toISOString(),
-        updatedAt: row[7] || new Date().toISOString(),
-        comments: row[8] ? JSON.parse(row[8]) : []
+        priority: row[4] || 'TRUNG BÌNH', // Priority field (default: TRUNG BÌNH)
+        department: row[5] || '',
+        subtasks: row[6] ? JSON.parse(row[6]) : [],
+        createdAt: row[7] || new Date().toISOString(),
+        updatedAt: row[8] || new Date().toISOString(),
+        comments: row[9] ? JSON.parse(row[9]) : []
       };
       tasks.push(task);
     } catch (error) {
@@ -236,12 +242,14 @@ function createTask(sheet, e) {
 
   // Convert Vietnamese status to English for Google Sheets validation
   const statusMap = {
+    'Cần làm': 'need-to-do',
     'Chưa làm': 'todo',
-    'Đang làm': 'in-progress',
     'Lên Kế Hoạch': 'planning',
+    'Đang làm': 'in-progress',
     'Đang Review': 'review',
     'Hoàn thành': 'completed',
-    'Tạm dừng': 'paused',
+    'Tồn đọng': 'on-hold',
+    'Dừng': 'paused',
     'Hủy bỏ': 'cancelled'
   };
 
@@ -250,11 +258,17 @@ function createTask(sheet, e) {
 
   console.log(`🔄 Create task status mapping: "${vietnameseStatus}" → "${englishStatus}"`);
 
+  // Validate priority
+  const validPriorities = ['CAO', 'TRUNG BÌNH', 'THẤP'];
+  const priority = validPriorities.includes(task.priority) ? task.priority : 'TRUNG BÌNH';
+  console.log(`🎯 Task priority: "${task.priority}" → "${priority}"`);
+
   const rowData = [
     task.id,
     task.title,
     task.description || '',
     englishStatus, // Use English status for Google Sheets
+    priority, // Priority field
     task.department || '',
     JSON.stringify(task.subtasks || []),
     task.createdAt || now,
@@ -323,21 +337,31 @@ function updateTask(sheet, e) {
   // Update row data with enhanced logging
   const now = new Date().toISOString();
 
-  // Convert Vietnamese status to English for Google Sheets validation
-  const statusMap = {
+  // Convert Vietnamese status to English if needed (frontend should send English, but handle both)
+  const statusMapViToEn = {
+    'Cần làm': 'need-to-do',
     'Chưa làm': 'todo',
-    'Đang làm': 'in-progress',
     'Lên Kế Hoạch': 'planning',
+    'Đang làm': 'in-progress',
     'Đang Review': 'review',
     'Hoàn thành': 'completed',
-    'Tạm dừng': 'paused',
+    'Tồn đọng': 'on-hold',
+    'Dừng': 'paused',
     'Hủy bỏ': 'cancelled'
   };
 
-  const vietnameseStatus = task.status || 'Chưa làm';
-  const englishStatus = statusMap[vietnameseStatus] || 'todo';
-
-  console.log(`🔄 Status mapping: "${vietnameseStatus}" → "${englishStatus}"`);
+  // Check if status is Vietnamese or English
+  let englishStatus = task.status;
+  if (statusMapViToEn[task.status]) {
+    // Status is Vietnamese, convert to English
+    englishStatus = statusMapViToEn[task.status];
+    console.log(`🔄 Status conversion (Vi→En): "${task.status}" → "${englishStatus}"`);
+  } else {
+    // Status is already English, validate it
+    const validStatuses = ['need-to-do', 'todo', 'planning', 'in-progress', 'review', 'completed', 'on-hold', 'paused', 'cancelled'];
+    englishStatus = validStatuses.includes(task.status) ? task.status : 'todo';
+    console.log(`✅ Status validation: "${task.status}" → "${englishStatus}"`);
+  }
 
   // Debug serialization
   const subtasksJson = JSON.stringify(task.subtasks || []);
@@ -349,11 +373,17 @@ function updateTask(sheet, e) {
   console.log('- Subtasks JSON preview:', subtasksJson.substring(0, 200));
   console.log('- Comments JSON preview:', commentsJson.substring(0, 200));
 
+  // Validate priority
+  const validPriorities = ['CAO', 'TRUNG BÌNH', 'THẤP'];
+  const priority = validPriorities.includes(task.priority) ? task.priority : 'TRUNG BÌNH';
+  console.log(`🎯 Task priority: "${task.priority}" → "${priority}"`);
+
   const rowData = [
     task.id,
     task.title,
     task.description || '',
     englishStatus, // Use English status for Google Sheets
+    priority, // Priority field
     task.department || '',
     subtasksJson,
     task.createdAt || now,
@@ -365,8 +395,8 @@ function updateTask(sheet, e) {
     `${index}: ${typeof item} (${String(item).length} chars)`
   ));
 
-  // Update sheet
-  sheet.getRange(rowIndex, 1, 1, 9).setValues([rowData]);
+  // Update sheet (now 10 columns including Priority)
+  sheet.getRange(rowIndex, 1, 1, 10).setValues([rowData]);
   
   const updatedTask = {
     ...task,

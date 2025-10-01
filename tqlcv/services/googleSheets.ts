@@ -12,7 +12,7 @@ const GOOGLE_SHEETS_CONFIG = {
   // Write API (Google Apps Script backend) - Use ENV variable
   apiBackendUrl:
     import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL ||
-    "https://script.google.com/macros/s/AKfycbymXgzjCHaZ4htbCPH0DBbx19-EESLnMkK9MSpTR2ExjbjM2n0npmmtcYgm7LDsmPeK/exec",
+    "https://script.google.com/macros/s/AKfycbzpcDjWf7Dzf5WzOkOmlphUxBT4z_Dgx2MPcWDzacVLjPiVDPJeqk20Pt0dL0rxYiig/exec",
 };
 
 // Debug log to verify URL
