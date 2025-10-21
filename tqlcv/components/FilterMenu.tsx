@@ -129,10 +129,10 @@ const FilterMenu: React.FC<FilterMenuProps> = ({
             {/* Filter Menu Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`p-2.5 rounded-lg transition-all duration-200 ${
-                    hasActiveFilters 
-                        ? 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200' 
-                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                className={`p-2.5 rounded-xl transition-all duration-300 ${
+                    hasActiveFilters
+                        ? 'bg-apple-blue/10 text-apple-blue hover:bg-apple-blue/20'
+                        : 'text-light-text-secondary hover:text-apple-blue hover:bg-white/30'
                 }`}
                 title="Bộ lọc"
             >
@@ -140,7 +140,7 @@ const FilterMenu: React.FC<FilterMenuProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
                 </svg>
                 {hasActiveFilters && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-indigo-500 rounded-full"></div>
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-apple-blue rounded-full shadow-apple animate-scale-in"></div>
                 )}
             </button>
 
@@ -148,23 +148,23 @@ const FilterMenu: React.FC<FilterMenuProps> = ({
             {isOpen && (
                 <>
                     {/* Backdrop */}
-                    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40" onClick={() => setIsOpen(false)}></div>
+                    <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsOpen(false)}></div>
 
                     {/* Sidebar */}
-                    <div className="fixed left-0 top-0 h-full w-80 bg-white shadow-2xl z-50 overflow-y-auto animate-slide-in-left">
+                    <div className="fixed left-0 top-0 h-full w-80 bg-white shadow-lg z-50 overflow-y-auto">
                         {/* Header */}
-                        <div className="flex items-center justify-between p-4 border-b border-gmail-gray-200 bg-gradient-to-r from-gmail-red/5 to-gmail-blue/5">
+                        <div className="flex items-center justify-between p-4 border-b border-gmail-gray-200">
                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-gmail-red rounded-full flex items-center justify-center">
-                                    <span className="text-white font-bold text-sm font-roboto">M</span>
+                                <div className="w-10 h-10 bg-apple-blue rounded-lg flex items-center justify-center">
+                                    <span className="text-white font-bold text-lg">M</span>
                                 </div>
-                                <h3 className="font-medium text-gmail-gray-800 font-roboto">Quản lý công việc</h3>
+                                <h3 className="font-medium text-gmail-gray-800">Quản lý công việc</h3>
                             </div>
                             <button
                                 onClick={() => setIsOpen(false)}
-                                className="p-2 hover:bg-gmail-gray-100 rounded-full transition-colors"
+                                className="p-2 hover:bg-gmail-gray-100 rounded-full transition-colors duration-150"
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5 text-gmail-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
@@ -179,35 +179,35 @@ const FilterMenu: React.FC<FilterMenuProps> = ({
                                     onStatusChange('');
                                     setIsOpen(false);
                                 }}
-                                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all duration-200 ${
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors duration-150 ${
                                     !selectedDepartment && !selectedStatus && !selectedPriority
-                                        ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-lg'
-                                        : 'text-slate-700 hover:bg-slate-100'
+                                        ? 'bg-blue-50 text-apple-blue'
+                                        : 'text-gmail-gray-700 hover:bg-gmail-gray-100'
                                 }`}
                             >
-                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                                    !selectedDepartment && !selectedStatus && !selectedPriority ? 'bg-white/20' : 'bg-slate-100'
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                    !selectedDepartment && !selectedStatus && !selectedPriority ? 'bg-apple-blue text-white' : 'bg-gmail-gray-200 text-gmail-gray-600'
                                 }`}>
                                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 16a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
                                     </svg>
                                 </div>
-                                <span className="flex-1 font-bold">Tất cả công việc</span>
-                                <span className={`text-xs font-bold px-2.5 py-1.5 rounded-full ${
+                                <span className="flex-1 font-medium">Tất cả công việc</span>
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded ${
                                     !selectedDepartment && !selectedStatus && !selectedPriority
-                                        ? 'bg-white/20 text-white'
-                                        : 'bg-slate-200 text-slate-700'
+                                        ? 'bg-apple-blue text-white'
+                                        : 'bg-gmail-gray-200 text-gmail-gray-600'
                                 }`}>
                                     {totalTasks > 99 ? '99+' : totalTasks}
                                 </span>
                             </button>
 
                             {/* Department Section */}
-                            <div className="mt-6">
-                                <div className="px-2 mb-2">
-                                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Phòng ban</h4>
+                            <div className="mt-4">
+                                <div className="px-2 mb-1">
+                                    <h4 className="text-xs font-medium text-gmail-gray-600 uppercase tracking-wide">Phòng ban</h4>
                                 </div>
-                                <div className="space-y-1">
+                                <div className="space-y-0.5">
                                     {DEPARTMENTS.map(dept => {
                                         const count = departmentCounts[dept] || 0;
                                         if (count === 0) return null;
@@ -221,23 +221,23 @@ const FilterMenu: React.FC<FilterMenuProps> = ({
                                                     onPriorityChange('');
                                                     setIsOpen(false);
                                                 }}
-                                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
+                                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors duration-150 ${
                                                     isActive
-                                                        ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm border-2 border-blue-200'
-                                                        : 'text-slate-700 hover:bg-slate-100'
+                                                        ? 'bg-blue-50 text-apple-blue'
+                                                        : 'text-gmail-gray-700 hover:bg-gmail-gray-100'
                                                 }`}
                                             >
-                                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                                                    isActive ? 'bg-blue-100' : 'bg-slate-100'
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                                    isActive ? 'bg-apple-blue text-white' : 'bg-gmail-gray-200 text-gmail-gray-600'
                                                 }`}>
                                                     {isActive
-                                                        ? DepartmentIconsSolid[dept]?.({ className: "w-5 h-5" })
-                                                        : DepartmentIcons[dept]?.({ className: "w-5 h-5" })
+                                                        ? DepartmentIconsSolid[dept]?.({ className: "w-4 h-4" })
+                                                        : DepartmentIcons[dept]?.({ className: "w-4 h-4" })
                                                     }
                                                 </div>
-                                                <span className="flex-1 font-semibold">{dept}</span>
-                                                <span className={`text-xs font-bold px-2.5 py-1.5 rounded-full ${
-                                                    isActive ? 'bg-blue-200 text-blue-800' : 'bg-slate-200 text-slate-600'
+                                                <span className="flex-1 font-medium text-sm">{dept}</span>
+                                                <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                                                    isActive ? 'bg-apple-blue text-white' : 'bg-gmail-gray-200 text-gmail-gray-600'
                                                 }`}>
                                                     {count > 99 ? '99+' : count}
                                                 </span>

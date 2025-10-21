@@ -1,37 +1,13 @@
 import React from 'react';
-import { Task, TaskStatus, DEPARTMENT_COLORS, STATUS_COLORS, PRIORITY_COLORS } from '../types';
-
-// Status colors imported from types.ts for consistency
+import { Task } from '../types';
+import { getDepartmentColor, getStatusColor, getPriorityColor } from '../constants/filterColors';
+import { getDepartmentIcon } from '../constants/iconMapping';
 
 interface TaskCardProps {
   task: Task;
   isSelected: boolean;
   onSelect: (task: Task) => void;
 }
-
-const statusConfig = {
-    'Chưa làm': {
-        dotClasses: 'bg-gray-500',
-    },
-    'Lên Kế Hoạch': {
-        dotClasses: 'bg-blue-500',
-    },
-    'Cần làm': {
-        dotClasses: 'bg-red-500',
-    },
-    'Đang làm': {
-        dotClasses: 'bg-yellow-500',
-    },
-    'Hoàn thành': {
-        dotClasses: 'bg-green-500',
-    },
-    'Tồn đọng': {
-        dotClasses: 'bg-orange-500',
-    },
-    'Dừng': {
-        dotClasses: 'bg-purple-500',
-    }
-};
 
 
 
@@ -41,46 +17,79 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, isSelected, onSelect }) => {
 
     // Gmail-style unread styling
     const isUnread = !task.isRead;
-    
+
+    // Get colors and icons based on department, status, priority
+    const deptColors = getDepartmentColor(task.department || 'CV Khác');
+    const statusColors = getStatusColor(task.status || 'Chưa làm');
+    const priorityColors = getPriorityColor(task.priority || 'TRUNG BÌNH');
+
+    // Get department icon from centralized mapping
+    const DepartmentIcon = getDepartmentIcon(task.department || 'CV Khác');
+
     return (
         <article
             onClick={() => onSelect(task)}
-            className={`flex items-start gap-4 p-4 border-b border-slate-200/80 cursor-pointer macos-hover ios-button no-zoom card-appear ${isSelected ? 'bg-indigo-100/60' : 'hover:bg-slate-100/50'} ${isUnread ? 'bg-white' : 'bg-gray-50/30'}`}
+            className={`
+                cursor-pointer transition-colors duration-150
+                px-4 md:px-5 lg:px-6 py-3 md:py-4 border-b border-gray-200/50 last:border-b-0
+                ${isSelected
+                    ? 'bg-white/20'
+                    : 'active:bg-white/20'
+                }
+            `}
         >
-            <div className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${statusConfig[task.status]?.dotClasses || 'bg-gray-500'}`}></div>
-            <div className="flex-grow overflow-hidden">
-                {/* Department, Status, and Priority badges */}
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    {task.priority && (
-                        <span className={`px-2 py-0.5 rounded-full border font-bold text-xs priority-badge ${PRIORITY_COLORS[task.priority] || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
-                            {task.priority}
-                        </span>
-                    )}
-                    {task.department && (
-                        <span className={`px-2 py-0.5 rounded-full border font-medium text-xs ${DEPARTMENT_COLORS[task.department] || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
-                            {task.department}
-                        </span>
-                    )}
-                    <span className={`px-2 py-0.5 rounded-full border font-medium text-xs ${STATUS_COLORS[task.status] || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
-                        {task.status}
-                    </span>
-                </div>
-
-                {/* Title and Date */}
-                <div className="flex justify-between items-baseline">
-                    <h3 className={`text-sm truncate pr-4 font-roboto ${isUnread ? 'font-bold text-gmail-gray-900' : 'font-normal text-gmail-gray-700'}`}>{task.title}</h3>
-                    <span className="text-xs text-gmail-gray-500 flex-shrink-0 font-roboto">{new Date(task.createdAt).toLocaleDateString('vi-VN')}</span>
-                </div>
-
-                {/* Description */}
-                <p className={`text-gmail-gray-600 text-xs truncate mt-1 font-roboto ${isUnread ? 'font-medium' : 'font-normal'}`}>{task.description || 'Không có mô tả'}</p>
-
-                {/* Subtasks count - Bottom */}
-                {totalSubtasks > 0 && (
-                    <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
-                        <span>{`✓ ${completedSubtasks}/${totalSubtasks}`}</span>
-                    </div>
+            <div className="flex items-start gap-3 md:gap-4">
+                {/* Blue Dot for unread (iOS style - 8px circle) */}
+                {isUnread && (
+                    <div className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full flex-shrink-0 bg-[#007AFF] mt-2"></div>
                 )}
+                {!isUnread && (
+                    <div className="w-2 h-2 md:w-2.5 md:h-2.5 flex-shrink-0 mt-2"></div>
+                )}
+
+                {/* Avatar Icon (iOS style with department color - ROUNDED) */}
+                <div className={`w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 rounded-full bg-gradient-to-br ${deptColors.gradient} flex items-center justify-center text-white flex-shrink-0 shadow-sm`}>
+                    <DepartmentIcon className="w-5 h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" strokeWidth={2} />
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                    {/* Title and Time */}
+                    <div className="flex items-center justify-between mb-2">
+                        <span className={`text-[15px] md:text-base lg:text-lg text-black ${isUnread ? 'font-semibold' : 'font-medium'}`}>
+                            {task.title}
+                        </span>
+                        <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                            <span className="text-[13px] md:text-sm text-gray-500">
+                                {new Date(task.createdAt).toLocaleDateString('vi-VN', { day: 'numeric', month: 'short' })}
+                            </span>
+                            <svg className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Status and Priority Badges on same line */}
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        {task.status && (
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusColors.bgActive} ${statusColors.textActive}`}>
+                                {task.status}
+                            </span>
+                        )}
+                        {task.priority && (
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${priorityColors.bgActive} ${priorityColors.textActive}`}>
+                                {task.priority}
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Description */}
+                    {task.description && (
+                        <div className="text-[14px] md:text-base text-gray-600 line-clamp-2">
+                            {task.description}
+                        </div>
+                    )}
+                </div>
             </div>
         </article>
     );

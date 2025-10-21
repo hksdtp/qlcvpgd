@@ -12,13 +12,13 @@ interface KanbanColumnProps {
 const KanbanColumn: React.FC<KanbanColumnProps> = ({ tasks, selectedTaskId, onSelectTask, isSearchActive }) => {
   if (tasks.length > 0) {
     return (
-      <div className="bg-transparent">
+      <div>
         {tasks.map(task => (
-          <TaskCard 
-            key={task.id} 
-            task={task} 
+          <TaskCard
+            key={task.id}
+            task={task}
             isSelected={task.id === selectedTaskId}
-            onSelect={onSelectTask} 
+            onSelect={onSelectTask}
           />
         ))}
       </div>
@@ -27,17 +27,21 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ tasks, selectedTaskId, onSe
 
   if (isSearchActive) {
     return (
-      <div className="text-center text-sm text-slate-500 py-20 px-6">
-        <h3 className="text-lg font-semibold text-slate-700">Không tìm thấy kết quả</h3>
-        <p className="mt-1">Thử một từ khóa khác để tìm kiếm công việc của bạn.</p>
+      <div className="text-center py-20 px-6">
+        <div className="max-w-sm mx-auto">
+          <h3 className="text-base font-medium text-gmail-gray-700">Không tìm thấy kết quả</h3>
+          <p className="mt-2 text-sm text-gmail-gray-600">Thử một từ khóa khác để tìm kiếm công việc của bạn.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="text-center text-sm text-slate-500 py-20 px-6">
-      <h3 className="text-lg font-semibold text-slate-700">Chưa có công việc</h3>
-      <p className="mt-1">Nhấn nút dấu cộng ở trên để thêm công việc đầu tiên của bạn.</p>
+    <div className="text-center py-20 px-6">
+      <div className="max-w-sm mx-auto">
+        <h3 className="text-base font-medium text-gmail-gray-700">Chưa có công việc</h3>
+        <p className="mt-2 text-sm text-gmail-gray-600">Nhấn nút dấu cộng ở trên để thêm công việc đầu tiên của bạn.</p>
+      </div>
     </div>
   );
 };

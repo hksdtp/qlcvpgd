@@ -1,4 +1,4 @@
-// Enhanced App component with Google Sheets integration
+// Enhanced App component with PostgreSQL API
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Task, TaskStatus, User } from './types';
 import KanbanColumn from './components/KanbanColumn';
@@ -7,18 +7,19 @@ import UserSelection from './components/UserSelection';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ArrowLeftOnRectangleIcon, PlusIcon, MagnifyingGlassIcon } from './components/icons';
 import TaskDetailModal from './components/TaskDetailModal';
-import FilterMenu from './components/FilterMenu';
+import FilterPills from './components/FilterPills';
+import FilterModal from './components/FilterModal';
 import LoadingSpinner from './components/LoadingSpinner';
-import { useGoogleSheets } from './hooks/useGoogleSheets';
+import { useAPI } from './hooks/useAPI';
 
 // Moved to FilterMenu.tsx and TaskDetail.tsx
 
 // --- Sample Data ---
 const users: User[] = [
-    { id: 'u1', name: 'Sếp Hạnh', role: 'admin' },
-    { id: 'u2', name: 'Mr Hùng', role: 'manager' },
-    { id: 'u3', name: 'Ms Nhung', role: 'marketing_lead' },
-    { id: 'u4', name: 'Ninh', role: 'member' },
+    { id: '550e8400-e29b-41d4-a716-446655440001', name: 'Sếp Hạnh', role: 'admin' },
+    { id: '550e8400-e29b-41d4-a716-446655440002', name: 'Mr Hùng', role: 'manager' },
+    { id: '550e8400-e29b-41d4-a716-446655440003', name: 'Ms Nhung', role: 'marketing_lead' },
+    { id: '550e8400-e29b-41d4-a716-446655440004', name: 'Ninh', role: 'member' },
 ];
 
 interface SelectedUser {
@@ -29,7 +30,7 @@ interface SelectedUser {
     color: string
 }
 
-const NINH_USER_ID = 'u4'; // NI user
+const NINH_USER_ID = '550e8400-e29b-41d4-a716-446655440004'; // Ninh user UUID
 
 const initialTasks: Task[] = [
     {
@@ -107,13 +108,15 @@ const App: React.FC = () => {
     const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedDepartment, setSelectedDepartment] = useState<string>('');
     const [selectedStatus, setSelectedStatus] = useState<string>('');
     const [selectedPriority, setSelectedPriority] = useState<string>('');
 
-    // Google Sheets integration
-    const { tasks, loading, error, isOnline, lastSync, actions, isConfigured } = useGoogleSheets();
+    // PostgreSQL API integration
+    const api = useAPI();
+    const { tasks, loading, error } = api;
 
     // Load user from localStorage - only run once on mount
     useEffect(() => {
@@ -123,12 +126,17 @@ const App: React.FC = () => {
         if (savedUser) {
             try {
                 const user = JSON.parse(savedUser);
+
+                // Check if user has old ID format (u1, u2, u3, u4)
+                if (user.id && user.id.startsWith('u')) {
+                    console.warn('⚠️ Detected old user ID format. Clearing localStorage...');
+                    localStorage.removeItem('currentUser');
+                    localStorage.removeItem('selectedUser');
+                    console.log('✅ localStorage cleared. Please select user again.');
+                    return;
+                }
+
                 setCurrentUser(user);
-                // Set current user in Google Sheets service when loading from localStorage
-                // Use setTimeout to ensure actions is available after initial render
-                setTimeout(() => {
-                    actions.setCurrentUser(user.id);
-                }, 0);
                 console.log(`🔄 Restored user from localStorage: ${user.name} (${user.id})`);
             } catch (error) {
                 console.error('Error loading user:', error);
@@ -137,7 +145,18 @@ const App: React.FC = () => {
 
         if (savedSelectedUser) {
             try {
-                setSelectedUser(JSON.parse(savedSelectedUser));
+                const selectedUserData = JSON.parse(savedSelectedUser);
+
+                // Check if selected user has old ID format
+                if (selectedUserData.id && selectedUserData.id.startsWith('u')) {
+                    console.warn('⚠️ Detected old selected user ID format. Clearing localStorage...');
+                    localStorage.removeItem('currentUser');
+                    localStorage.removeItem('selectedUser');
+                    console.log('✅ localStorage cleared. Please select user again.');
+                    return;
+                }
+
+                setSelectedUser(selectedUserData);
             } catch (error) {
                 console.error('Error loading selected user:', error);
             }
@@ -145,19 +164,24 @@ const App: React.FC = () => {
     }, []); // Empty dependency array - only run once on mount
 
     // Handle user selection from UserSelection component
-    const handleUserSelect = (user: SelectedUser) => {
-        setSelectedUser(user);
-        localStorage.setItem('selectedUser', JSON.stringify(user));
+    const handleUserSelect = async (user: SelectedUser) => {
+        try {
+            setSelectedUser(user);
+            localStorage.setItem('selectedUser', JSON.stringify(user));
 
-        // Map selected user to current user for existing logic
-        const mappedUser = users.find(u => u.name === user.name);
-        if (mappedUser) {
-            setCurrentUser(mappedUser);
-            localStorage.setItem('currentUser', JSON.stringify(mappedUser));
+            // Map selected user to current user for existing logic
+            const mappedUser = users.find(u => u.name === user.name);
+            if (mappedUser) {
+                setCurrentUser(mappedUser);
+                localStorage.setItem('currentUser', JSON.stringify(mappedUser));
+                console.log(`🔄 User switched to: ${mappedUser.name} (${mappedUser.id})`);
 
-            // CRITICAL FIX: Set current user in Google Sheets service for user-specific data
-            actions.setCurrentUser(mappedUser.id);
-            console.log(`🔄 User switched to: ${mappedUser.name} (${mappedUser.id})`);
+                // Refresh tasks after user selection
+                await api.refreshTasks();
+            }
+        } catch (error) {
+            console.error('Error selecting user:', error);
+            // Don't block user selection on API error
         }
     };
 
@@ -169,6 +193,16 @@ const App: React.FC = () => {
         }
     }, [currentUser]);
 
+    // Update selectedTask when tasks change (e.g., after adding comment)
+    useEffect(() => {
+        if (selectedTask) {
+            const updatedTask = tasks.find(t => t.id === selectedTask.id);
+            if (updatedTask) {
+                setSelectedTask(updatedTask);
+            }
+        }
+    }, [tasks]); // Only depend on tasks, not selectedTask to avoid infinite loop
+
     // Role-based permissions: Only restrict certain actions for specific roles
     // For now, allow all users to comment and interact
     const isReadOnly = false; // currentUser?.role === 'viewer'; // Uncomment if you want viewer-only role
@@ -177,17 +211,17 @@ const App: React.FC = () => {
         if (isReadOnly) return;
 
         try {
-            await actions.addTask({
+            await api.addTask({
                 ...taskData,
                 subtasks: [],
                 comments: taskData.comments || [],
-                createdBy: currentUser?.id, // Set task creator for permission system
+                // createdBy: null, // Database will handle NULL for created_by (UUID type)
             });
             console.log('✅ Task added successfully');
         } catch (error) {
             console.error('❌ Failed to add task:', error);
         }
-    }, [isReadOnly, actions, currentUser?.id]);
+    }, [isReadOnly, api]);
 
     const handleSelectTask = useCallback((task: Task) => {
         setSelectedTask(task);
@@ -195,11 +229,11 @@ const App: React.FC = () => {
         if (!task.isRead) {
             const updatedTask = { ...task, isRead: true };
             // Update without setting selectedTask to avoid re-opening modal
-            actions.updateTask(updatedTask).catch(error => {
+            api.updateTask(task.id, { isRead: true }).catch(error => {
                 console.error('❌ Failed to mark task as read:', error);
             });
         }
-    }, [actions]);
+    }, [api]);
 
     const handleCloseDetail = useCallback(() => {
         setSelectedTask(null);
@@ -213,37 +247,37 @@ const App: React.FC = () => {
             setSelectedTask(updatedTask);
 
             // Sync with backend in background
-            await actions.updateTask(updatedTask);
+            await api.updateTask(updatedTask.id, updatedTask);
             console.log('✅ Task updated successfully');
         } catch (error) {
             console.error('❌ Failed to update task:', error);
             // Revert on error (optional: could show error toast)
         }
-    }, [isReadOnly, actions]);
+    }, [isReadOnly, api]);
 
     const handleDeleteTask = useCallback(async (taskId: string) => {
         if (isReadOnly) return;
 
         try {
-            await actions.deleteTask(taskId);
+            await api.deleteTask(taskId);
             setSelectedTask(null);
             console.log('✅ Task deleted successfully');
         } catch (error) {
             console.error('❌ Failed to delete task:', error);
         }
-    }, [isReadOnly, actions]);
+    }, [isReadOnly, api]);
 
     const handleRefresh = useCallback(async () => {
         console.log('🔄 Refresh button clicked');
         try {
             console.log('📊 Current tasks count:', tasks.length);
-            await actions.refreshTasks();
-            console.log('✅ Tasks refreshed from Google Sheets');
+            await api.refreshTasks();
+            console.log('✅ Tasks refreshed from PostgreSQL');
             console.log('📊 New tasks count:', tasks.length);
         } catch (error) {
             console.error('❌ Failed to refresh:', error);
         }
-    }, [tasks.length, actions]);
+    }, [tasks.length, api]);
 
     const filteredTasks = useMemo(() => {
         // Multi-level sorting: Priority → Status → CreatedAt
@@ -425,31 +459,74 @@ const App: React.FC = () => {
 
     return (
         <ErrorBoundary>
-            <div className="h-screen w-screen overflow-hidden animate-app-fade-in">
-            <div className="flex h-full w-full">
-                {/* --- Sidebar (Task List) --- */}
-                <aside className={`
-                    absolute md:relative w-full md:w-96 h-full bg-slate-50/70 backdrop-blur-2xl border-r border-slate-300/50
-                    flex flex-col flex-shrink-0 transition-transform duration-300 ease-in-out
-                    ${selectedTask ? '-translate-x-full md:translate-x-0' : 'translate-x-0'}
-                `}>
-                     <header className="p-4 border-b border-slate-300/50 flex justify-between items-center flex-shrink-0">
-                        <UserProfileHeader user={currentUser} isReadOnly={isReadOnly} targetUser={userForHeader} />
-                        <div className="flex items-center gap-1">
+            <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 overflow-hidden">
+                {/* Liquid Glass Background Effect - Fixed */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-blue-100/30 to-purple-100/30 backdrop-blur-3xl pointer-events-none"></div>
+                <div className="absolute top-20 left-10 w-72 h-72 md:w-96 md:h-96 bg-blue-300/20 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="absolute bottom-40 right-10 w-80 h-80 md:w-[500px] md:h-[500px] bg-purple-300/20 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 md:w-[600px] md:h-[600px] bg-pink-200/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                {/* Error Display */}
+                {error && (
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 max-w-md w-full px-4">
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 shadow-lg backdrop-blur-xl">
+                            <div className="flex items-start gap-3">
+                                <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                                <div className="flex-1">
+                                    <h3 className="text-sm font-semibold text-red-800 mb-1">Lỗi kết nối</h3>
+                                    <p className="text-sm text-red-700">{error}</p>
+                                    <button
+                                        onClick={() => {
+                                            api.clearError();
+                                            api.refreshTasks();
+                                        }}
+                                        className="mt-2 text-sm font-medium text-red-600 hover:text-red-800"
+                                    >
+                                        Thử lại
+                                    </button>
+                                </div>
+                                <button
+                                    onClick={() => api.clearError()}
+                                    className="text-red-400 hover:text-red-600"
+                                >
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Content Container - Responsive & Scrollable */}
+                <div className="relative z-10 flex flex-col h-full w-full max-w-md md:max-w-3xl lg:max-w-7xl mx-auto">
+                {/* --- Header (iOS style - Large Title) --- */}
+                <header className="px-4 md:px-6 lg:px-8 py-3 md:py-4 flex-shrink-0">
+                    {/* Large Title */}
+                    <h1 className="text-[34px] md:text-[42px] lg:text-[48px] font-bold tracking-tight mb-1 text-black">
+                        {currentUser?.name || 'Công việc'}
+                    </h1>
+                    <div className="flex items-center justify-between mb-4">
+                        <p className="text-gray-500 text-[13px] md:text-[15px]">
+                            {loading ? 'Đang tải...' : `${filteredTasks.length} công việc`}
+                        </p>
+                        <div className="flex items-center gap-1 md:gap-2">
                             {/* Refresh button */}
                             <button
                                 onClick={handleRefresh}
                                 disabled={loading}
-                                title="Đồng bộ với Google Sheets"
-                                className="p-2 text-slate-500 hover:text-slate-800 rounded-full hover:bg-slate-500/10 transition-colors disabled:opacity-50"
+                                title="Đồng bộ với PostgreSQL"
+                                className="p-2 md:p-3 text-[#007AFF] hover:bg-white/40 rounded-full backdrop-blur-xl transition-all active:scale-95 disabled:opacity-50"
                             >
-                                <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className={`w-5 h-5 md:w-6 md:h-6 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                 </svg>
                             </button>
 
                             {!isReadOnly && (
-                                <button onClick={() => setIsModalOpen(true)} title="Thêm công việc mới" className="p-2 text-indigo-600 hover:text-indigo-800 rounded-full hover:bg-indigo-500/10 transition-colors">
+                                <button onClick={() => setIsModalOpen(true)} title="Thêm công việc mới" className="p-2 md:p-3 text-[#007AFF] hover:bg-white/40 rounded-full backdrop-blur-xl transition-all active:scale-95">
                                     <PlusIcon />
                                 </button>
                             )}
@@ -461,102 +538,222 @@ const App: React.FC = () => {
                                     localStorage.removeItem('selectedUser');
                                 }}
                                 title="Chuyển người dùng"
-                                className="p-2 text-slate-500 hover:text-slate-800 rounded-full hover:bg-slate-500/10 transition-colors"
+                                className="p-2 md:p-3 text-[#007AFF] hover:bg-white/40 rounded-full backdrop-blur-xl transition-all active:scale-95"
                             >
                                 <ArrowLeftOnRectangleIcon/>
                             </button>
                         </div>
-                    </header>
+                    </div>
+                </header>
 
-                    {/* --- Error Bar Only --- */}
-                    {error && (
-                        <div className="px-4 py-2 border-b border-slate-300/50 flex-shrink-0">
-                            <div className="flex items-center gap-2 text-red-600 text-sm">
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                </svg>
-                                <span>{error}</span>
-                                <button onClick={actions.clearError} className="text-red-500 hover:text-red-700">×</button>
-                            </div>
+                {/* --- Error Bar Only --- */}
+                {error && (
+                    <div className="px-4 md:px-6 lg:px-8 py-2 flex-shrink-0">
+                        <div className="flex items-center gap-2 text-red-600 text-sm md:text-base bg-red-50/90 backdrop-blur-xl rounded-lg p-3 md:p-4 border border-red-200">
+                            <svg className="w-4 h-4 md:w-5 md:h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            <span>{error}</span>
+                            <button onClick={api.clearError} className="text-red-500 hover:text-red-700 ml-auto">×</button>
                         </div>
-                    )}
+                    </div>
+                )}
 
-                    {/* --- Search Bar with Filter Menu --- */}
-                    <div className="p-4 border-b border-slate-300/50 flex-shrink-0">
-                        <div className="flex items-center gap-3">
-                            {/* Filter Menu - Moved to left */}
-                            <FilterMenu
-                                selectedDepartment={selectedDepartment}
-                                selectedStatus={selectedStatus}
-                                selectedPriority={selectedPriority}
-                                onDepartmentChange={setSelectedDepartment}
-                                onStatusChange={setSelectedStatus}
-                                onPriorityChange={setSelectedPriority}
-                                departmentCounts={departmentCounts}
-                                statusCounts={statusCounts}
-                                priorityCounts={priorityCounts}
-                                totalTasks={filteredTasks.length}
-                            />
-                            <div className="relative flex-1">
-                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                    <MagnifyingGlassIcon className="h-5 w-5 text-slate-400" />
+                {/* --- Filter Pills (Horizontal scroll) --- */}
+                <FilterPills
+                    selectedDepartment={selectedDepartment}
+                    selectedStatus={selectedStatus}
+                    selectedPriority={selectedPriority}
+                    onDepartmentChange={setSelectedDepartment}
+                    onStatusChange={setSelectedStatus}
+                    onPriorityChange={setSelectedPriority}
+                    departmentCounts={departmentCounts}
+                    statusCounts={statusCounts}
+                    priorityCounts={priorityCounts}
+                    totalTasks={filteredTasks.length}
+                />
+
+                {/* --- Task List with Sections --- */}
+                <div className="flex-1 overflow-y-auto overflow-x-hidden pb-32 md:pb-36 lg:pb-40 scroll-smooth" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    {loading && tasks.length === 0 ? (
+                        <div className="flex items-center justify-center h-64">
+                            <LoadingSpinner message="Đang tải dữ liệu..." />
+                        </div>
+                    ) : (
+                        <>
+                            {/* New Tasks Section */}
+                            {(() => {
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                const yesterday = new Date(today);
+                                yesterday.setDate(yesterday.getDate() - 1);
+
+                                const newTasks = filteredTasks.filter(task => {
+                                    const taskDate = new Date(task.createdAt);
+                                    taskDate.setHours(0, 0, 0, 0);
+                                    return taskDate >= yesterday;
+                                });
+
+                                const oldTasks = filteredTasks.filter(task => {
+                                    const taskDate = new Date(task.createdAt);
+                                    taskDate.setHours(0, 0, 0, 0);
+                                    return taskDate < yesterday;
+                                });
+
+                                return (
+                                    <>
+                                        {newTasks.length > 0 && (
+                                            <>
+                                                <div className="px-3 md:px-6 lg:px-8 mb-2">
+                                                    <h3 className="text-[13px] md:text-[15px] text-gray-500">Công việc mới</h3>
+                                                </div>
+                                                <div className="bg-white/30 backdrop-blur-xl rounded-[20px] mx-3 md:mx-6 lg:mx-8 overflow-hidden shadow-xl shadow-black/5 border border-white/40 mb-6">
+                                                    <KanbanColumn
+                                                        tasks={newTasks}
+                                                        onSelectTask={handleSelectTask}
+                                                        selectedTaskId={selectedTask?.id}
+                                                        isSearchActive={searchQuery.length > 0}
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {oldTasks.length > 0 && (
+                                            <>
+                                                <div className="px-3 md:px-6 lg:px-8 mb-2">
+                                                    <h3 className="text-[13px] md:text-[15px] text-gray-500">Công việc cũ hơn</h3>
+                                                </div>
+                                                <div className="bg-white/30 backdrop-blur-xl rounded-[20px] mx-3 md:mx-6 lg:mx-8 overflow-hidden shadow-xl shadow-black/5 border border-white/40">
+                                                    <KanbanColumn
+                                                        tasks={oldTasks}
+                                                        onSelectTask={handleSelectTask}
+                                                        selectedTaskId={selectedTask?.id}
+                                                        isSearchActive={searchQuery.length > 0}
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
+                                    </>
+                                );
+                            })()}
+                        </>
+                    )}
+                </div>
+
+                {/* --- Bottom Bar (iOS 16 Liquid Glass style - Floating Elements) --- */}
+                <div className="fixed bottom-0 left-0 right-0 pb-5 md:pb-6 pointer-events-none z-50">
+                    <div className="max-w-md md:max-w-3xl lg:max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pointer-events-auto">
+                        <div className="flex items-center justify-center gap-3 md:gap-4">
+                            {/* Left: Filter Menu Button (Hamburger) - Liquid Glass */}
+                            <button
+                                onClick={() => setIsFilterModalOpen(true)}
+                                className="w-[60px] h-[60px] md:w-16 md:h-16 rounded-full bg-white/30 backdrop-blur-3xl flex items-center justify-center active:scale-95 transition-all duration-200 shadow-2xl relative flex-shrink-0 border border-white/20"
+                                style={{
+                                    boxShadow: '0 8px 32px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3)'
+                                }}
+                            >
+                                {/* Hamburger Icon - Dark for contrast */}
+                                <div className="flex flex-col gap-[5px]">
+                                    <div className="w-7 h-[3px] bg-gray-900 rounded-full"></div>
+                                    <div className="w-7 h-[3px] bg-gray-900 rounded-full"></div>
+                                    <div className="w-7 h-[3px] bg-gray-900 rounded-full"></div>
                                 </div>
+
+                                {/* Active indicator - Green dot */}
+                                {(selectedStatus || selectedPriority) && (
+                                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#34C759] rounded-full border-2 border-white shadow-lg"></span>
+                                )}
+                            </button>
+
+                            {/* Center: Search Bar - Liquid Glass */}
+                            <div
+                                className="flex-1 max-w-[500px] h-[60px] md:h-[64px] bg-white/30 backdrop-blur-3xl rounded-full flex items-center px-6 md:px-7 gap-3 shadow-2xl border border-white/20"
+                                style={{
+                                    boxShadow: '0 8px 32px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3)'
+                                }}
+                            >
+                                {/* Search Icon */}
+                                <svg className="w-6 h-6 md:w-7 md:h-7 text-gray-700 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+
+                                {/* Input */}
                                 <input
                                     type="text"
-                                    placeholder="Tìm kiếm công việc..."
+                                    placeholder="Tìm kiếm"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full rounded-lg border-0 bg-slate-200/60 py-2.5 pl-10 pr-4 text-slate-800 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+                                    className="flex-1 bg-transparent border-0 text-[17px] md:text-[18px] text-gray-900 font-semibold placeholder:text-gray-500 placeholder:font-normal focus:outline-none"
+                                    style={{ fontSize: '17px' }}
                                 />
                             </div>
+
+                            {/* Right: Compose Button - Liquid Glass */}
+                            {!isReadOnly && (
+                                <button
+                                    onClick={() => setIsModalOpen(true)}
+                                    className="w-[60px] h-[60px] md:w-16 md:h-16 rounded-full bg-white/30 backdrop-blur-3xl flex items-center justify-center active:scale-95 transition-all duration-200 shadow-2xl flex-shrink-0 border border-white/20"
+                                    style={{
+                                        boxShadow: '0 8px 32px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3)'
+                                    }}
+                                >
+                                    {/* Pen/Edit Icon - Dark */}
+                                    <svg className="w-7 h-7 md:w-8 md:h-8 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                </button>
+                            )}
                         </div>
                     </div>
+                </div>
+                </div>
 
-                    {/* Filters - Hidden, now using FilterMenu */}
+                {/* Modals */}
+                {!isReadOnly && <AddTaskModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onAddTask={handleAddTask}
+                />}
 
-                    <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain webkit-overflow-scrolling-touch min-h-0">
-                        {loading && tasks.length === 0 ? (
-                            <div className="flex items-center justify-center h-64">
-                                <LoadingSpinner message="Đang tải dữ liệu từ Google Sheets..." />
-                            </div>
-                        ) : (
-                            <div className="pb-24 md:pb-8 px-4">
-                                <KanbanColumn
-                                    tasks={filteredTasks}
-                                    onSelectTask={handleSelectTask}
-                                    selectedTaskId={selectedTask?.id}
-                                    isSearchActive={searchQuery.length > 0}
-                                />
-                            </div>
-                        )}
-                    </div>
-                </aside>
+                <TaskDetailModal
+                    task={selectedTask}
+                    isOpen={!!selectedTask}
+                    onClose={handleCloseDetail}
+                    onUpdate={handleUpdateTask}
+                    onDelete={handleDeleteTask}
+                    isReadOnly={isReadOnly}
+                    selectedUser={selectedUser}
+                    users={users}
+                    api={api}
+                />
 
-                {/* --- Main Content (Welcome Screen) --- */}
-                <main className="hidden md:flex flex-1 flex-col items-center justify-center h-full text-center text-slate-500 p-8">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    <h2 className="text-2xl font-semibold mt-6 text-slate-600">Bắt đầu làm việc</h2>
-                    <p className="mt-2 max-w-sm">Chọn một công việc từ danh sách để xem chi tiết trong modal.</p>
-                </main>
-            </div>
-            {!isReadOnly && <AddTaskModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onAddTask={handleAddTask}
-            />}
+                <FilterModal
+                    isOpen={isFilterModalOpen}
+                    onClose={() => setIsFilterModalOpen(false)}
+                    selectedStatus={selectedStatus as TaskStatus | ''}
+                    selectedPriority={selectedPriority as any}
+                    onStatusChange={(status) => {
+                        setSelectedStatus(status);
+                        setSelectedDepartment('');
+                    }}
+                    onPriorityChange={(priority) => {
+                        setSelectedPriority(priority);
+                        setSelectedDepartment('');
+                    }}
+                    statusCounts={statusCounts}
+                    priorityCounts={priorityCounts}
+                />
 
-            {/* Mobile Task Detail Modal */}
-            <TaskDetailModal
-                task={selectedTask}
-                isOpen={!!selectedTask}
-                onClose={handleCloseDetail}
-                onUpdate={handleUpdateTask}
-                onDelete={handleDeleteTask}
-                isReadOnly={isReadOnly}
-                selectedUser={selectedUser}
-            />
+                {/* Custom Styles */}
+                <style>{`
+                    .no-scrollbar::-webkit-scrollbar {
+                        display: none;
+                    }
+                    .no-scrollbar {
+                        -ms-overflow-style: none;
+                        scrollbar-width: none;
+                    }
+                `}</style>
             </div>
         </ErrorBoundary>
     );

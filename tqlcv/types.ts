@@ -87,6 +87,10 @@ export interface Task {
   createdBy?: string; // User ID of task creator for permission system
   department?: string;
   isRead?: boolean; // Gmail-style read/unread state
+  likes?: number; // Number of likes on this task
+  likedBy?: string[]; // Array of user IDs who liked this task
+  startDate?: string; // ISO string - Task start date
+  dueDate?: string; // ISO string - Task deadline/due date
 }
 
 export interface User {

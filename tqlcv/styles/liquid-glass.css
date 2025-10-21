@@ -1,0 +1,147 @@
+/* Gmail-Style Flat Design System - Global Styles */
+/* Clean, Minimal, White Background */
+
+/* ==================== FLAT PANELS (NO GLASS) ==================== */
+
+.glass-panel {
+  background: #FFFFFF;
+  border: none;
+  border-bottom: 1px solid #E8EAED;
+  box-shadow: none;
+}
+
+.glass-panel-strong {
+  background: #FFFFFF;
+  border: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.glass-panel-subtle {
+  background: #F9FAFB;
+  border: none;
+  box-shadow: none;
+}
+
+/* ==================== BACKGROUNDS ==================== */
+
+.gradient-bg {
+  background: #FFFFFF;
+}
+
+.gradient-mesh {
+  background: #FFFFFF;
+}
+
+/* ==================== SMOOTH SCROLLING ==================== */
+
+.elastic-scroll {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.elastic-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.elastic-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.elastic-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.elastic-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+  background-clip: padding-box;
+}
+
+/* ==================== ANIMATIONS ==================== */
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==================== HOVER EFFECTS (FLAT) ==================== */
+
+.glass-hover {
+  transition: background-color 0.15s ease;
+}
+
+.glass-hover:hover {
+  background: #F1F3F4;
+  transform: none;
+  box-shadow: none;
+}
+
+.glass-hover:active {
+  background: #E8EAED;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ==================== FOCUS STATES ==================== */
+
+.focus-ring {
+  outline: none;
+  transition: box-shadow 0.15s ease;
+}
+
+.focus-ring:focus {
+  box-shadow: 0 0 0 2px #1A73E8;
+}
+
+/* ==================== UTILITIES ==================== */
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+

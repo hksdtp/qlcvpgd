@@ -1,0 +1,94 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+*.test.js.snap
+
+# Production
+build/
+dist/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Cache
+.cache/
+.parcel-cache/
+.vite/
+.turbo/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+*.save
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
+.Spotlight-V100
+.Trashes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Auto-generated docs (DO NOT COMMIT - Agents_ds.md Rule)
+*_SUMMARY.md
+*_REPORT.md
+*_ANALYSIS.md
+*_CHECKLIST.md
+*_GENERATED.md
+*_GUIDE.md
+*_SYSTEM.md
+*_REDESIGN.md
+README_AUTO.md
+GUIDE_AUTO.md
+DEPLOYMENT*.md
+FIX_*.md
+SYNC_*.md
+SERVER_*.md
+TROUBLESHOOTING.md
+QUICK_START*.md
+REMOTE_*.md
+SSH_*.md
+TASK_*.md
+TMUX_*.md
+USER_*.md
+ANIMATION_*.md
+COLOR_*.md
+COMPONENT_*.md
+DESIGN_*.md
+ICON_*.md
+
+# Debug files
+debug-*.js
+test-*.js
+browser-test-*.js
+
